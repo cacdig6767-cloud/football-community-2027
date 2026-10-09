@@ -1,0 +1,5 @@
+# Football Community 2027 — robots de la web pública
+User-agent: *
+Allow: /
+
+Sitemap: https://football-community-2027.vercel.app/sitemap.xml

@@ -1,0 +1,14 @@
+# Sistema / higiene
+.DS_Store
+Thumbs.db
+*.log
+
+# Vercel / herramientas locales
+.vercel/
+node_modules/
+package-lock.json
+
+# Backups y temporales
+*.bak
+*.tmp
+*.zip
