@@ -2891,7 +2891,8 @@ function __paintBdor(r){
 CODES.push(
  {code:'BALONORO',i:'🏆',msg:'🏆 LA GALA DEL BALÓN DE ORO HA COMENZADO: +2.000💰 en la tesorería. El sobre dorado te espera en la tienda 🎁',run(){state.coins+=2000;return{};}},
  {code:'GOLDENBALL',i:'🥇',msg:'🥇 +1.500💰 — balón dorado embolsado',run(){state.coins+=1500;return{};}},
- {code:'FC27ORO',i:'⚽',msg:'⚽ +1.000💰 de oro fino para tu club',run(){state.coins+=1000;return{};}});
+ {code:'FC27ORO',i:'⚽',msg:'⚽ +1.000💰 de oro fino para tu club',run(){state.coins+=1000;return{};}},
+ {code:'BALONAZO',i:'🎖️',msg:'🎖️ …',run(){var dk=BDOR_DECK;var x=dk[Math.floor(rand()*dk.length)];var c={id:'b'+(state.seq++),name:x.name,pos:x.pos,rating:x.rating,club:x.club,nat:x.nat,sub:x.normal?'FC27':'BALÓN DE ORO',version:'BDOR',bdor:true,icon:x.icon,art:x.art};this.i=x.icon?'🏆':'🥇';this.msg=(x.icon?'🏆 ¡ÍCONO BALÓN DE ORO A TERRAZA: ':'🎖️ BALONAZO al club: ')+x.name+' ('+x.rating+') cae de <b>la gala dorada</b> directo a tu colección 🎴'+ (x.normal?' — ¡la carta normal de Neymar, qué suerte!':'') + '!';addCard(c);return{got:[c]};}});
 /* — render de carta BDOR con artetería real — */
 function cardHTMLBDOR(c,i){
  const placa=c.icon?'<div class="bdor-placa">★ ICONO BALLON DE ORO</div>':(c.normal?'<div class="bdor-placa bdor-pln">FC27</div>':'<div class="bdor-placa">BALLON DE ORO</div>');
