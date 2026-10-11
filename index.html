@@ -2305,6 +2305,8 @@ input[type="range"]{accent-color:#00ff87}
                                 <h3 id="news-title">Bienvenido al club</h3>
                                 <p id="news-body">Has sido nombrado nuevo entrenador.</p>
                                 <button class="btn-primary" onclick="ManagerCareer.playNextMatch()">▶ Jugar partido</button>
+                                <button class="btn-primary" onclick="FC27Bridge.launch()" style="background:#f5c451;color:#161307;margin-left:6px">🎮 Jugar en cancha</button>
+                                <button class="btn-primary" onclick="FC27Bridge.launch()" style="background:#f5c451;color:#161307;margin-left:6px">🎮 Jugar en cancha</button>
                             </section>
                             <section class="fc27-card">
                                 <h3 class="fc27-h">Tareas del mánager</h3>
@@ -2341,6 +2343,8 @@ input[type="range"]{accent-color:#00ff87}
                             <div class="fc27-dim" id="fc-next-round">Jornada 1</div>
                             <div class="fc27-dim">🗓️ <span id="next-match-date">-</span></div>
                             <button class="btn-primary fc27-block" onclick="ManagerCareer.playNextMatch()">▶ Jugar</button>
+                            <button class="btn-primary fc27-block" onclick="FC27Bridge.launch()" style="background:#f5c451;color:#161307;margin-top:6px">🎮 Jugar en cancha</button>
+                            <button class="btn-primary fc27-block" onclick="FC27Bridge.launch()" style="background:#f5c451;color:#161307;margin-top:6px">🎮 Jugar en cancha</button>
                         </section>
                         <section class="fc27-card">
                             <h3 class="fc27-h">Clasificación</h3>
@@ -10779,6 +10783,7 @@ const ManagerCareer = {
         if (match.played) return;
         const homeTeam = this.state.teams.find(t => t.name === match.home);
         const awayTeam = this.state.teams.find(t => t.name === match.away);
+        try { if (typeof FC27Bridge !== 'undefined' && FC27Bridge._applyPending && FC27Bridge._applyPending(this, match, homeTeam, awayTeam)) return; } catch (e0) {}   /* ⚽ FC27: resultado real de cancha */
         const homeRating = match.home === this.state.myTeam ? this.getMyRating() : homeTeam.rating;
         const awayRating = match.away === this.state.myTeam ? this.getMyRating() : awayTeam.rating;
         const homeStr = homeRating + (Math.random() * 8 - 4) + 3;
@@ -38426,6 +38431,162 @@ try { if (!boot()) setTimeout(boot, 800); } catch(e){ setTimeout(function(){ try
 
 
 
+
+<script>
+/* ══ ⚽ FC27 BRIDGE v1 — el mánager pisa la cancha: tu partido de jornada se JUEGA de verdad (haxball-fc27.html) ══ */
+window.FC27Bridge = (function () {
+  var FILE = 'haxball-fc27.html';
+  function posMapOf(p) { return p === 'GK' ? 'POR' : p === 'DF' ? 'DEF' : p === 'MF' ? 'MED' : p === 'FW' ? 'DEL' : 'MED'; }
+  function ficha(p) { return { n: String(p.name || 'Ficha').slice(0, 14), r: Math.max(40, Math.min(116, p.rating || 70)), p: posMapOf(p.pos) }; }
+  function shade(hex, f) {
+    var m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(hex || '');
+    if (!m) return '#1d1d2f';
+    return '#' + [m[1], m[2], m[3]].map(function (h) { var v = Math.max(0, Math.min(255, Math.round(parseInt(h, 16) * f))).toString(16); return v.length < 2 ? '0' + v : v; }).join('');
+  }
+  function pairColors(name) {
+    var c1 = (typeof TEAM_COLORS !== 'undefined' && TEAM_COLORS[name]) || '#b03030';
+    return [c1, shade(c1, 0.45)];
+  }
+  function rndName() {
+    var A = (typeof FIRST_NAMES !== 'undefined' && FIRST_NAMES.length) ? FIRST_NAMES : ['Álex', 'Bruno', 'Dario', 'Ezra', 'Marek', 'Tilo', 'Juan', 'Santi'];
+    var B = (typeof LAST_NAMES !== 'undefined' && LAST_NAMES.length) ? LAST_NAMES : ['Vega', 'Ríos', 'Duarte', 'Falk', 'Silva', 'Monje', 'Reyes', 'Cruz'];
+    return A[Math.floor(Math.random() * A.length)] + ' ' + B[Math.floor(Math.random() * B.length)];
+  }
+  function rosterRival(rating) {
+    var out = [], i, pos;
+    for (i = 0; i < 13; i++) {
+      pos = i < 4 ? 'FW' : i < 9 ? 'MF' : 'DF';
+      out.push(ficha({ name: rndName(), rating: Math.max(55, Math.min(99, (rating || 84) - 5 + Math.floor(Math.random() * 9))), pos: pos }));
+    }
+    out.push({ n: rndName(), r: Math.max(60, Math.min(99, (rating || 84) - 1)), p: 'POR' });
+    return out;
+  }
+  /* overlay */
+  var ov = null;
+  function close() { if (ov && ov.parentNode) ov.parentNode.removeChild(ov); ov = null; }
+  function launch() {
+    var MC = mcRef();
+    if (!MC || !MC.state) return;
+    var s = MC.state;
+    if (!s.myTeam || !s.fixtures || s.currentRound >= s.fixtures.length) return;
+    var round = s.fixtures[s.currentRound] || [], m = null;
+    round.forEach(function (x) { if (!m && !x.played && (x.home === s.myTeam || x.away === s.myTeam)) m = x; });
+    if (!m) return;
+    var mine = s.myTeam, opp = (m.home === mine ? m.away : m.home);
+    var oppTeam = (s.teams || []).filter(function (t) { return t.name === opp; })[0] || { rating: 84 };
+    /* fichas de MI plantel: XI titular primero, banca después, el POR al final del montón de campo */
+    var xiSet = {};
+    (s.startingXI || []).forEach(function (id) { xiSet[id] = 1; });
+    var xiT = (s.squad || []).filter(function (p) { return xiSet[p.id]; });
+    var bench = (s.squad || []).filter(function (p) { return !xiSet[p.id]; }).slice(0, 7);
+    var roster = [];
+    xiT.filter(function (p) { return p.pos !== 'GK'; }).forEach(function (p) { roster.push(ficha(p)); });
+    bench.filter(function (p) { return p.pos !== 'GK'; }).forEach(function (p) { roster.push(ficha(p)); });
+    var gk = xiT.filter(function (p) { return p.pos === 'GK'; })[0] || bench.filter(function (p) { return p.pos === 'GK'; })[0];
+    if (gk) roster.push({ n: String(gk.name).slice(0, 14), r: Math.max(40, Math.min(116, gk.rating || 70)), p: 'POR' });
+    if (roster.filter(function (f) { return f.p !== 'POR'; }).length < 11) return;  /* sin 11 de campo no hay baile */
+    FC27Bridge.pending = null;  /* no arrastrar resultados viejos de una tanda anterior */
+    var pcA = pairColors(opp), pcH = pairColors(mine);
+    var q = ['career=1', 'club=' + encodeURIComponent(mine), 'rival=' + encodeURIComponent(opp),
+      'h1=' + encodeURIComponent(pcH[0]), 'h2=' + encodeURIComponent(pcH[1]),
+      'a1=' + encodeURIComponent(pcA[0]), 'a2=' + encodeURIComponent(pcA[1]),
+      'form=' + encodeURIComponent(s.formation || '4-3-3'),
+      'roster=' + encodeURIComponent(JSON.stringify(roster)),
+      'rosterA=' + encodeURIComponent(JSON.stringify(rosterRival(oppTeam.rating)))].join('&');
+    ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:#000;z-index:99999;display:flex;flex-direction:column';
+    var bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#0b0d17;color:#8fa2cf;font:700 12px system-ui,-apple-system,sans-serif';
+    var ttl = document.createElement('b'); ttl.style.color = '#fff'; ttl.style.fontSize = '13px';
+    ttl.textContent = minesafe(mine) + ' vs ' + minesafe(opp) + ' — cancha FC27';
+    var btn = document.createElement('button');
+    btn.textContent = '✕ salir (no cuenta)';
+    btn.style.cssText = 'background:#1b2138;color:#cfd8ff;border:1px solid #2c3760;border-radius:8px;padding:6px 10px;font:800 12px system-ui;cursor:pointer;margin-left:auto';
+    btn.onclick = function () { if (window.confirm('¿Salir del partido? NO se apunta la jornada.')) close(); };
+    bar.appendChild(ttl); bar.appendChild(btn); ov.appendChild(bar);
+    var fr = document.createElement('iframe');
+    fr.src = FILE + '?' + q; fr.style.cssText = 'flex:1;border:0;width:100%';
+    ov.appendChild(fr); document.body.appendChild(ov);
+  }
+  function minesafe(s2){ return String(s2||''); }
+  function mcRef(){ return (typeof ManagerCareer!=='undefined' && ManagerCareer) ? ManagerCareer : (window.ManagerCareer||null); } /* 7.9.0 lo declara con let/const: vive SOLO como global léxico, window.ManagerCareer es undefined */
+  /* el marcador de cancha viaja de vuelta: se apunta y corre la jornada entera */
+  window.addEventListener('message', function (e) {
+    var d = e && e.data;
+    if (!d || d.type !== 'FC27_RESULT' || !ov) return;
+    if (typeof d.gh !== 'number' || typeof d.ga !== 'number') return;
+    close();
+    FC27Bridge.pending = { gh: d.gh, ga: d.ga };     /* orientado a MÍ (el haxball siempre me pone de local) */
+    try { var _mcK = mcRef(); if (_mcK && _mcK.state) _mcK.state._kmDone = true; } catch (eN) {}  /* saltar Key Moments: el momento YA se jugó en cancha */
+    try { var _mc=mcRef(); if(_mc) _mc.playNextMatch(); } catch (e2) {}
+  });
+  /* llamado por simulateMatch por cada cruce de la jornada: solo dispara en MI partido */
+  function _applyPending(self, match, homeTeam, awayTeam) {
+    var p = FC27Bridge.pending; if (!p) return false;
+    var mine = self.state.myTeam;
+    if (!homeTeam) homeTeam = (self.state.teams || []).filter(function (t) { return t.name === match.home; })[0] || null;
+    if (!awayTeam) awayTeam = (self.state.teams || []).filter(function (t) { return t.name === match.away; })[0] || null;
+    if (match.played) return false;
+    if (match.home !== mine && match.away !== mine) return false;
+    var homeIsMine = match.home === mine;
+    match.homeGoals = homeIsMine ? p.gh : p.ga;
+    match.awayGoals = homeIsMine ? p.ga : p.gh;
+    match.played = true;
+    FC27Bridge.pending = null;
+    try { self.registerGoals(homeIsMine ? match.homeGoals : match.awayGoals); } catch (e) {}
+    try { self.updateTeamStats(homeTeam, awayTeam, match.homeGoals, match.awayGoals); } catch (e) {}
+    return true;
+  }
+  /* ––– intercepta POR FUERA: 7.9.0 reemplaza simulateMatch con Comeback.sim, así que el hueco del cuerpo base no basta ––– */
+  try {
+    var _MCb = mcRef();
+    if (_MCb && _MCb.simulateMatch && !_MCb.simulateMatch._fc27) {
+      var _simOrig = _MCb.simulateMatch;
+      var w27 = function (match) {
+        try { if (FC27Bridge._applyPending(this, match, null, null)) return; } catch (eB) {}
+        return _simOrig.apply(this, arguments);
+      };
+      w27._fc27 = true;
+      _MCb.simulateMatch = w27;
+    }
+  } catch (eB) {}
+  return { launch: launch, _applyPending: _applyPending, pending: null };
+})();
+</script>
+<script>
+/* ===== FC27 CANCHA en la tarjeta JORNADA (hero de Inicio) — tapas al haxball ===== */
+(function() {
+  try {
+    if (typeof HUB2 !== 'undefined' && HUB2.heroHTML && !HUB2.heroHTML._fc27c) {
+      var _heroC = HUB2.heroHTML;
+      var nheroC = function(ev) {
+        var h = _heroC.apply(this, arguments);
+        try {
+          if (ev && ev.act === 'league' && h.indexOf('hub2-cancha') < 0 && h.indexOf('</button>') >= 0) {
+            h = h.replace('</button>', '</button><button class="hub2-cta" id="hub2-cancha" style="background:linear-gradient(135deg,#7cffb2,#34d399)!important;color:#06281a!important;margin-left:10px">🎮 JUGAR EN CANCHA</button>');
+          }
+        } catch (e) {}
+        return h;
+      };
+      nheroC._fc27c = true;
+      HUB2.heroHTML = nheroC;
+    }
+    if (typeof HUB2 !== 'undefined' && HUB2.bind && !HUB2.bind._fc27c) {
+      var _bdC = HUB2.bind;
+      var nbdC = function(hub, ev, lg) {
+        var r = _bdC.apply(this, arguments);
+        try {
+          var b = hub.querySelector('#hub2-cancha');
+          if (b) b.addEventListener('click', function() { try { FC27Bridge.launch(); } catch (e) {} });
+        } catch (e) {}
+        return r;
+      };
+      nbdC._fc27c = true;
+      HUB2.bind = nbdC;
+    }
+  } catch (e) {}
+})();
+</script>
 
 </body>
 </html>

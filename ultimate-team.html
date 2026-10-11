@@ -395,6 +395,7 @@ select,input[type=range]{background:#1a2542;border:1px solid #33436b;color:var(-
             <select id="tac-r" style="width:100%"><option value="hold">Posesión</option><option value="mid" selected>Equilibrado</option><option value="direct">⚡ Directo (más goles)</option></select></label>
         </div>
         <button id="b-play" style="width:100%;margin-top:12px">▶ JUGAR PARTIDO</button>
+        <button id="b-cancha" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#7cffb2,#34d399);color:#06281a;border-color:rgba(124,255,178,.6)">🎮 JUGAR EN CANCHA</button>
       </div>
     </div>
     <div class="pan">
@@ -2998,5 +2999,159 @@ try{(function(){
  }catch(e){}
 })();}catch(e){}
 </script>
+
+<script>
+/* ============ FC27 CANCHA ↔ ULTIMATE TEAM — juega TÚ el partido con TUS cartas ============
+   Gemelo del puente de Carrera: haxball-fc27.html?career=1&bus=ut carga tu XI UT (+ banca),
+   y el pitazo final vuelve por postMessage FC27_RESULT_UT y firma por el MISMO finishMatch
+   (monedas, evoluciones, tierWins, llave galáctica, objetivos…). === */
+(function(){
+ var FILE='haxball-fc27.html';
+ var ov=null, pendingMatch=null;
+
+ function UT(){return window.UT||null;}
+ function st(){var u=UT();return u?u.state:null;}
+ function esc(s){return String(s||'');}
+ function utToast(msg){
+  try{var e=document.getElementById('toast');if(!e)return;e.textContent=msg;e.classList.add('on');clearTimeout(utToast._t);utToast._t=setTimeout(function(){e.classList.remove('on');},2200);}catch(e){}
+ }
+ function utModal(html){
+  try{var m=document.getElementById('modal');m.innerHTML=html;document.getElementById('mback').classList.add('on');}catch(e){}
+ }
+ function utCloseModal(){try{document.getElementById('mback').classList.remove('on');}catch(e){}}
+
+ function coloresUT(name){
+  var h=0;name=esc(name);
+  for(var i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))>>>0;
+  var PAL=['#e11d48','#f97316','#eab308','#22c55e','#0ea5e9','#6366f1','#a855f7','#db2777','#16a34a','#f5f5f4'];
+  var c1=PAL[h%PAL.length],c2=PAL[(h>>3)%PAL.length];
+  return c2===c1?[c1,'#111827']:[c1,c2];
+ }
+ function cardUT(id){
+  var cs=(UT()&&UT().cards)||[];
+  for(var i=0;i<cs.length;i++)if(cs[i].id===id)return cs[i];
+  return null;
+ }
+ function effAtUT(i){      /* réplica honesta: encaje fino + química, igual que la ficha 3D */
+  var u=UT(),s=st();if(!u||!s)return 0;
+  var id=s.xi[i];if(!id)return 0;var c=cardUT(id);if(!c)return 0;
+  try{return Math.max(40,c.rating-u.penaltySub(u.FORMATION_SLOTS[s.formation][i],c)+u.chemBonus(id));}catch(e){return Math.max(40,c.rating);}
+ }
+ function slotFamUT(i){
+  var u=UT(),s=st();if(!u||!s)return 'MED';
+  try{return u.famOf(u.FORMATION_SLOTS[s.formation][i]);}catch(e){return 'MED';}
+ }
+ function fichasUT(){
+  var s=st();if(!s)return [];
+  var campo=[],por=null;
+  for(var i=0;i<11;i++){
+   var id=s.xi[i];if(!id)continue;
+   var c=cardUT(id);if(!c)continue;
+   var f={n:esc(c.name).slice(0,14),r:Math.max(40,Math.min(116,Math.round(effAtUT(i)))),p:slotFamUT(i)};
+   if(f.p==='POR')por=f;else campo.push(f);
+  }
+  var enXI={};for(var j=0;j<11;j++)enXI[s.xi[j]]=1;
+  var banca=(s.cards||[]).filter(function(c){return !enXI[c.id];})
+    .sort(function(a,b){return b.rating-a.rating;});
+  var u=UT();
+  for(var k=0;k<banca.length&&campo.length<16;k++){
+   var pf='MED';try{pf=u?u.famOf(banca[k].pos):'MED';}catch(e3){}
+   if(pf==='POR')continue;                 /* el segundo meta no cabe en el césped */
+   campo.push({n:esc(banca[k].name).slice(0,14),r:Math.max(40,Math.min(116,Math.round(banca[k].rating))),p:pf});
+  }
+  if(!por){ /* plan B: el mejor portero suelto que haya en el club */
+   var g=banca.filter(function(c){var f2='MED';try{f2=u?u.famOf(c.pos):'MED';}catch(e4){}return f2==='POR';})[0];
+   if(g)por={n:esc(g.name).slice(0,14),r:Math.max(40,Math.min(116,Math.round(g.rating))),p:'POR'};
+  }
+  if(por)campo.push(por);                   /* siempre el POR al final del montón de campo */
+  return campo;
+ }
+ function crewRival(rname,base){
+  var u=UT();var RN=(u&&u.__RN)||null;
+  base=Math.max(40,Math.min(116,Math.round(base||80)));
+  var POSV=['DEL','MED','DEL','DEF','MED','DEL','DEF','MED','DEF','MED'];
+  var NAMES=['K. Motor','L. Siroco','D. Azabache','R. Estrella','P. Trueno','N. Nebrija','O. Fortuna','T. Galerna','M. Cierzo','B. Candela'];
+  var h=0;for(var i=0;i<rname.length;i++)h=(h*33+rname.charCodeAt(i))>>>0;
+  var out=[];
+  for(var k=0;k<10;k++)out.push({n:NAMES[(h+k*7)%NAMES.length],r:Math.max(40,Math.min(116,base+((h>>((k%8)*4))%13)-6)),p:POSV[k]});
+  out.push({n:NAMES[(h+5)%NAMES.length],r:base,p:'POR'});
+  return out;
+ }
+ function closeOv(){if(ov&&ov.parentNode)ov.parentNode.removeChild(ov);ov=null;}
+ function abortOv(){closeOv();pendingMatch=null;var b=document.getElementById('b-cancha');if(b)b.disabled=false;}
+ function openOv(ttl,src){
+  closeOv();
+  ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:#000;z-index:99999;display:flex;flex-direction:column';
+  var bar=document.createElement('div');
+  bar.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0b0d17;color:#8fa2cf;font:700 12px system-ui,-apple-system,sans-serif';
+  var t=document.createElement('b');t.style.color='#fff';t.style.fontSize='13px';t.textContent=ttl;
+  var btn=document.createElement('button');
+  btn.textContent='✕ salir (no cuenta)';
+  btn.style.cssText='background:#1b2138;color:#cfd8ff;border:1px solid #2c3760;border-radius:8px;padding:6px 10px;font:800 12px system-ui;white-space:nowrap;cursor:pointer;margin-left:auto';
+  btn.onclick=function(){if(window.confirm('¿Salir del partido? NO se paga nada.'))abortOv();};
+  bar.appendChild(t);bar.appendChild(btn);ov.appendChild(bar);
+  var fr=document.createElement('iframe');
+  fr.src=src;fr.style.cssText='flex:1;border:0;width:100%';
+  ov.appendChild(fr);
+  document.body.appendChild(ov);
+ }
+
+ function launchUT(){
+  var u=UT();if(!u||!u.playMatch)return;
+  var b=document.getElementById('b-cancha');
+  var tierIdx=-1;
+  try{[].slice.call(document.querySelectorAll('#riv-list input')).forEach(function(it,i){if(tierIdx<0&&it.checked)tierIdx=i;});}catch(e0){}
+  if(tierIdx<0)tierIdx=0;
+  var r=null;
+  try{r=u.playMatch(tierIdx,false);}catch(e){}
+  if(r&&r.err&&(st().cards||[]).length>=11){try{u.autoXI();u.renderXI();r=u.playMatch(tierIdx,false);}catch(e2){}}
+  if(!r||r.err){utToast(r&&r.err?r.err:'No se pudo armar el partido');return;}
+  var roster=fichasUT();
+  if(roster.filter(function(f){return f.p!=='POR';}).length<10){utToast('Tu XI no está listo para la cancha');return;}
+  if(!roster.some(function(f){return f.p==='POR';})){utToast('Te falta portero para entrar a la cancha');return;}
+  if(b)b.disabled=true;
+  var T=u.TIERS[tierIdx];
+  var pcH=coloresUT('Tu Club FC27'),pcA=coloresUT(r.rival);
+  var q=['career=1','bus=ut','club='+encodeURIComponent('Tu Club'),
+         'rival='+encodeURIComponent(r.rival),
+         'h1='+encodeURIComponent(pcH[0]),'h2='+encodeURIComponent(pcH[1]),
+         'a1='+encodeURIComponent(pcA[0]),'a2='+encodeURIComponent(pcA[1]),
+         'form='+encodeURIComponent(st().formation||'4-3-3'),
+         'roster='+encodeURIComponent(JSON.stringify(roster)),
+         'rosterA='+encodeURIComponent(JSON.stringify(crewRival(r.rival,(T.atk+T.dfn)/2)))].join('&');
+  pendingMatch=r;
+  openOv('🎮 Tu Club vs '+esc(r.rival)+' · '+esc(r.tier),FILE+'?'+q);
+ }
+
+ window.addEventListener('message',function(e){
+  var d=e&&e.data;
+  if(!d||d.type!=='FC27_RESULT_UT'||!ov)return;
+  if(typeof d.gh!=='number'||typeof d.ga!=='number')return;
+  closeOv();
+  var r=pendingMatch;pendingMatch=null;
+  var b=document.getElementById('b-cancha');if(b)b.disabled=false;
+  if(!r)return;
+  try{
+   r.ga=d.ga;                                 /* el acta de la cancha manda, no el xG */
+   var f=r.fin(d.gh);                          /* mismo finishMatch: monedas, evo, tiers, llave 🗝️ */
+   var s=st();
+   var res=f.gf>f.ga?'✅ ¡VICTORIA!':f.gf===f.ga?'🤝 Empate repartido':'❌ Derrota en cancha';
+   utModal('<h2>🎮 CRÓNICA — JUGADO EN CANCHA</h2>'+
+    '<div class="rew"><b style="font-size:1.7rem">'+f.gf+' - '+f.ga+'</b><br>vs '+esc(r.rival)+' · '+res+'</div>'+
+    '<div class="rew" style="color:var(--gold)">+'+UT().fmt(f.rew)+' 💰</div>'+
+    (s?'<div style="font-size:.75rem;color:var(--mut);text-align:center">Balance: '+s.wins+'V · '+s.draws+'E · '+(s.played-s.wins-s.draws)+'D</div>':'')+
+    (r._galKey?'<div class="rew" style="border-color:var(--gold);color:var(--gold)">'+r._galKey+'</div>':'')+
+    (r._bridgeMsg?'<div class="rew">'+r._bridgeMsg+'</div>':'')+
+    '<div class="foot"><button id="m-okut">Cerrar</button></div>');
+   document.getElementById('m-okut').onclick=utCloseModal;
+  }catch(err){utToast('⚠️ '+err.message);}
+ });
+
+ try{var hb=document.getElementById('b-cancha');if(hb)hb.onclick=launchUT;}catch(e){}
+ window.UTBridge={launchUT:launchUT,_fichas:fichasUT,_pending:function(){return pendingMatch;}};
+})();
+</script>
+
 </body>
 </html>
