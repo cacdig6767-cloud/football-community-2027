@@ -2503,6 +2503,30 @@ input[type="range"]{accent-color:#00ff87}
     </div>
     <div class="fc27-dim" id="a11y-status" style="margin-top:10px;">Accesibilidad: tamaño normal · contraste estándar · paleta original</div>
 </div>
+<div class="fc27-card" style="max-width:640px; margin-top:14px;" id="cancha-card">
+    <h3 class="fc27-h">🎮 Partido en cancha</h3>
+    <p class="fc27-dim" style="margin-bottom:12px;">ATENCIÓ TA LA CANCHA MÓVIL: el lado de los mandos, el tamaño de los botones y los avisos que ves durante el partido. Se recuerda tu gusto y viaja a TODOS los partidos (Carrera y Ultimate Team).</p>
+    <div style="margin-bottom:12px;">
+        <div class="fc27-dim" style="font-size:.78rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">Lado de los mandos</div>
+        <button class="btn-ghost" id="cs-pad-r" onclick="CanchaStudio.set('pad','r')">🕹️ Stick izq. · Botones der.</button>
+        <button class="btn-ghost" id="cs-pad-l" onclick="CanchaStudio.set('pad','l')">🫲 Zurdo: Botones izq. · Stick der.</button>
+    </div>
+    <div style="margin-bottom:12px;">
+        <div class="fc27-dim" style="font-size:.78rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">Tamaño de botones</div>
+        <button class="btn-ghost" id="cs-bsz-c" onclick="CanchaStudio.set('bsz','c')">Compactos</button>
+        <button class="btn-ghost" id="cs-bsz-m" onclick="CanchaStudio.set('bsz','m')">Medianos</button>
+        <button class="btn-ghost" id="cs-bsz-l" onclick="CanchaStudio.set('bsz','l')">Grandes</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+        <label style="display:flex;gap:8px;align-items:center;font-size:.85rem;font-weight:600;cursor:pointer;">
+            <input type="checkbox" id="cs-pop" onchange="CanchaStudio.set('pop',this.checked?1:0)"> 🥾 Pop-ups de jugada («¡Fulanito la quita!», cruces y avisos del campo)
+        </label>
+        <label style="display:flex;gap:8px;align-items:center;font-size:.85rem;font-weight:600;cursor:pointer;">
+            <input type="checkbox" id="cs-cmt" onchange="CanchaStudio.set('cmt',this.checked?1:0)"> 🎙️ Cronista en la parte baja (los comentarios del partido)
+        </label>
+    </div>
+    <div class="fc27-dim" style="margin-top:10px;">Los cambios valen para el próximo partido que entres; apagar el relato de abajo NO vacía el acta de prensa.</div>
+</div>
         <div class="fc27-card" style="max-width:640px; display:none;" id="ai-settings-card">
     <h3 class="fc27-h">🤖 Agente IA · Negociaciones</h3>
     <p class="fc27-dim" style="margin-bottom:10px;">Conecta una API compatible con OpenAI para que los directores deportivos rivales negocien contigo con IA real: hacen ofertas, contraofertan y charlan en compra y venta. También genera los momentos clave de tus partidos y da voz a tus jugadores en las charlas privadas. Por seguridad, tu clave se borra cada vez que entras: pégala de nuevo en cada visita. El proveedor y el modelo sí se recuerdan. Sin clave, el juego usa un negociador simulado.</p>
@@ -14032,14 +14056,16 @@ const Talks = {
     maybeNew: function() {
         var s = ManagerCareer.state;
         if (!s.talks || s.talks.length >= 3) return;
-        if (Math.random() > 0.45) return;
+        if (Math.random() > 0.3) return;                            /* 🔇 míster, menos toques a la puerta */
         var busy = {};
         s.talks.forEach(function(t) { busy[t.playerId] = true; });
         var c = s.squad.filter(function(p) { return !busy[p.id] && !(s.injuries || {})[p.id]; });
         if (!c.length) return;
         var pick = null, type = null;
-        var exp = c.filter(function(p) { return (p.contract == null ? 2 : p.contract) <= 1; });
-        if (exp.length && Math.random() < 0.7) { pick = exp[Math.floor(Math.random() * exp.length)]; type = 'contract'; }
+        var rnd = s.currentRound || 0;
+        s.askCD = s.askCD || {};
+        var exp = c.filter(function(p) { return (p.contract == null ? 2 : p.contract) <= 1 && (s.askCD[p.id] || 0) <= rnd; });   /* 🚫 el que ya tocó, espera */
+        if (exp.length && Math.random() < 0.55) { pick = exp[Math.floor(Math.random() * exp.length)]; type = 'contract'; s.askCD[pick.id] = rnd + 8; }   /* ⏳ 8 jornadas de tregua */
         if (!pick) {
             var sad = c.filter(function(p) { return (p.morale == null ? 70 : p.morale) < 52; });
             if (sad.length) { sad.sort(function(a, b) { return a.morale - b.morale; }); pick = sad[0]; type = 'unhappy'; }
@@ -17340,7 +17366,7 @@ var Autosave = {
       var gs = Game.showScreen;
       var gw = function(id) {
         var r = gs.apply(this, arguments);
-        if (id === 'screen-settings') { RandomEvents.syncSettings(); Autosave.syncSettings(); try { if (typeof AIConfig !== 'undefined') AIConfig.status(); } catch (e2) {} }
+        if (id === 'screen-settings') { RandomEvents.syncSettings(); Autosave.syncSettings(); try { if (typeof AIConfig !== 'undefined') AIConfig.status(); } catch (e2) {} try { if (typeof CanchaStudio !== 'undefined') CanchaStudio.refresh(); } catch (e3) {} }
         return r;
       };
       gw._n7 = true;
@@ -32819,6 +32845,30 @@ var A11yStudio = {
   setCB: function(k){ if (k !== 'none' && !this.CB[k]) return; var st = this.state(); st.cb = k; this.save(st); this.apply(); }
 };
 try { window.A11yStudio = A11yStudio; } catch (e) {}
+/* 🎮 OPCIONES DE CANCHA (Ajustes): controles personalizados + pop-ups — se recuerdan y viajan en la URL de los partidos */
+var CanchaStudio = {
+  LS: 'fc27_cancha',
+  state: function(){ try { var d = JSON.parse(localStorage.getItem(this.LS) || 'null'); if (d && typeof d === 'object') { d.pad = d.pad || 'r'; d.bsz = d.bsz || 'c'; if (d.pop == null) d.pop = 1; if (d.cmt == null) d.cmt = 1; return d; } } catch (e) {} return { pad:'r', bsz:'c', pop:1, cmt:1 }; },
+  save: function(st){ try { localStorage.setItem(this.LS, JSON.stringify(st)); } catch (e) {} },
+  set: function(k, v){ var st = this.state(); st[k] = v; this.save(st); this.refresh(); },
+  qs: function(){
+    var st = this.state(), out = [];
+    if (st.pad === 'l') out.push('pad=l');
+    if (st.bsz !== 'c') out.push('bsz=' + st.bsz);
+    if (!st.pop) out.push('pop=0');
+    if (!st.cmt) out.push('cmt=0');
+    return out;
+  },
+  refresh: function(){
+    var st = this.state();
+    var mark = function(id, cond){ var b = document.getElementById(id); if (!b) return; b.style.borderColor = cond ? 'var(--accent-green,#4ade80)' : ''; b.style.opacity = cond ? '1' : '.55'; b.style.fontWeight = cond ? '800' : '600'; };
+    mark('cs-pad-r', st.pad !== 'l'); mark('cs-pad-l', st.pad === 'l');
+    mark('cs-bsz-c', st.bsz === 'c'); mark('cs-bsz-m', st.bsz === 'm'); mark('cs-bsz-l', st.bsz === 'l');
+    var p = document.getElementById('cs-pop'); if (p) p.checked = !!st.pop;
+    var c = document.getElementById('cs-cmt'); if (c) c.checked = !!st.cmt;
+  }
+};
+try { window.CanchaStudio = CanchaStudio; } catch (e) {}
 try { A11yStudio.apply(true); } catch (e) {}
 try { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ A11yStudio.apply(true); }); } catch (e) {}
 </script>
@@ -38489,7 +38539,8 @@ window.FC27Bridge = (function () {
       'a1=' + encodeURIComponent(pcA[0]), 'a2=' + encodeURIComponent(pcA[1]),
       'form=' + encodeURIComponent(s.formation || '4-3-3'),
       'roster=' + encodeURIComponent(JSON.stringify(roster)),
-      'rosterA=' + encodeURIComponent(JSON.stringify(rosterRival(oppRating)))].join('&');
+      'rosterA=' + encodeURIComponent(JSON.stringify(rosterRival(oppRating)))]
+      .concat(typeof CanchaStudio !== 'undefined' ? CanchaStudio.qs() : []).join('&');   /* 🎛️ +tus gustos de cancha */
     ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:#000;z-index:99999;display:flex;flex-direction:column';
     var bar = document.createElement('div');

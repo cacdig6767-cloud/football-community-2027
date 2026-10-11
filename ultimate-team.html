@@ -3162,13 +3162,25 @@ try{(function(){
          'diff='+Math.min(4,tierIdx),'dpc=100',      /* 🧠 la escalera decide lo bravos que son los bots */
          'comp=ut','compx='+encodeURIComponent((T.tag?T.tag+' ':'')+T.n),    /* 🏆 el peldaño también firma el marcador */
          'roster='+encodeURIComponent(JSON.stringify(roster)),
-         'rosterA='+encodeURIComponent(JSON.stringify(crewRival(r.rival,(T.atk+T.dfn)/2)))].join('&');
+         'rosterA='+encodeURIComponent(JSON.stringify(crewRival(r.rival,(T.atk+T.dfn)/2)))]
+         .concat(typeof CANCHA_QS!=='undefined'?CANCHA_QS():[]).join('&');   /* 🎛️ gustos de cancha desde Ajustes */
   pendingMatch=r;
   openOv('🎮 Tu Club vs '+esc(r.rival)+' · '+esc(r.tier),FILE+'?'+q);
  }
 
  /* ══ DRAFT en cancha: 4 rondas reales, el acta empuja la misma lógica de premios ══ */
- var pendingDraft=null;
+ /* 🎛️ mismos gustos de cancha que Ajustes del manager (localStorage compartido del dominio) */
+function CANCHA_QS(){
+ try {
+  var d=JSON.parse(localStorage.getItem('fc27_cancha')||'null')||{},out=[];
+  if(d.pad==='l')out.push('pad=l');
+  if(d.bsz&&d.bsz!=='c')out.push('bsz='+d.bsz);
+  if(d.pop===0||d.pop==='0'||d.pop===false)out.push('pop=0');
+  if(d.cmt===0||d.cmt==='0'||d.cmt===false)out.push('cmt=0');
+  return out;
+ } catch(e){return [];}
+}
+var pendingDraft=null;
  function fichasDraft(d){
   var u=UT();if(!u)return null;
   var slots=(u.FORMATION_SLOTS[d.fmt]||[]);
@@ -3201,7 +3213,8 @@ try{(function(){
    'diff='+Math.min(4,u.DRAFT_TIERSEQ[r]),'dpc=100',   /* 🧠 semipro → mítico: la subida también llega a la cancha */
    'comp=draft','compx='+encodeURIComponent('RONDA '+(r+1)+'/4 · '+T.n),    /* 🎪 el draft firma su ronda */
    'roster='+encodeURIComponent(JSON.stringify(roster)),
-   'rosterA='+encodeURIComponent(JSON.stringify(crewRival(riv,Math.round(T.atk))))].join('&');
+   'rosterA='+encodeURIComponent(JSON.stringify(crewRival(riv,Math.round(T.atk))))
+   ].concat(typeof CANCHA_QS!=='undefined'?CANCHA_QS():[]).join('&');   /* 🎛️ gustos de cancha desde Ajustes */
   openOv('🎪 Tu Draft vs '+riv+' · '+T.tag+' '+T.n,FILE+'?'+q);
  }
  function applyDraft(riv,gh,ga){

@@ -18,6 +18,12 @@ canvas{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 12px
 body.comp #compChip{display:inline-flex}
 #teclas{transition:opacity .22s}
 body.comp-rp #teclas{opacity:0;visibility:hidden;transition:opacity .16s,visibility 0s linear .17s}   /* 🤫 en la repetición los mandos se evaporan */
+/* 🎛️ mandos personalizados (vienen de Ajustes): zurdo = espejo exacto; tallas dentro de la regla 74-96px */
+body.padL #teclas{flex-direction:row-reverse}
+body.bsz-m #btns{transform:scale(1.07);transform-origin:right bottom}
+body.bsz-l #btns{transform:scale(1.13);transform-origin:right bottom}
+body.bsz-m #stick{transform:scale(1.07);transform-origin:left bottom}
+body.bsz-l #stick{transform:scale(1.13);transform-origin:left bottom}
 #score .dot{width:11px;height:11px;border-radius:50%;border:2px solid #fff6;display:inline-block}
 #score .num{font-size:1.08rem;font-weight:900;min-width:19px;text-align:center;color:#fff}
 #score .clock{font-size:.78rem;color:var(--compc,#22d3ee);font-weight:700;min-width:38px;text-align:center}
@@ -368,6 +374,13 @@ const COMPS={
  draft:{icon:'🎪',name:'DRAFT',c:'#fb923c',cd:'#c2410c'}};
 const COMP=(()=>{const k=_dq.get('comp'),t=COMPS[k];if(!t)return null;
  const x=_dq.get('compx');return Object.assign({},t,{key:k,label:(x&&x.trim())?x.trim().toUpperCase():t.name});})();
+
+/* 🎛️ MANDO A TU GUSTO (Ajustes del menú): lado del pad, tamaño de botones y pop-ups del partido.
+   Sin padrinos en URL: todo EXACTAMENTE como siempre. */
+const POP=!_dq.has('pop')||_dq.get('pop')!=='0';
+const CMT=!_dq.has('cmt')||_dq.get('cmt')!=='0';
+if(_dq.get('pad')==='l')document.body.classList.add('padL');
+const _bs=_dq.get('bsz');if(_bs==='m'||_bs==='l')document.body.classList.add('bsz-'+_bs);
 
 /* ── sonido sintetizado (WebAudio, sin archivos) ── */
 const SFX={ctx:null,on:true,
@@ -1198,6 +1211,7 @@ function cornerCross(p){
 }
 let tauntEl=null;
 function flashTaunt(txt){
+ if(!POP)return;                                              /* 🔕 el míster apagó los avisos */
  if(!tauntEl){tauntEl=document.createElement('div');tauntEl.style.cssText='position:absolute;top:52px;left:50%;transform:translateX(-50%);font-size:.8rem;font-weight:800;color:#7ee787;background:#0a1024dd;border:1px solid #2a3757;border-radius:10px;padding:6px 16px;z-index:7;pointer-events:none;opacity:0;transition:opacity .18s';document.getElementById('stage').appendChild(tauntEl);}
  tauntEl.textContent=txt;tauntEl.style.opacity=1;clearTimeout(tauntEl._t);tauntEl._t=setTimeout(()=>tauntEl.style.opacity=0,1100);
 }
@@ -1205,6 +1219,7 @@ let comentElT=null;
 function comment(txt){                                           /* 🎙️ EL CRONISTA: la voz del partido, al pie del campo */
  const el=document.getElementById('coment');if(!el)return;
  (S.cmts=S.cmts||[]).push(txt);if(S.cmts.length>8)S.cmts.shift();    /* 🗒️ la relatoría se apunta, para el acta */
+ if(!CMT)return;                                              /* 🔕 la barra calla a pedido del míster */
  el.textContent=txt;el.classList.add('on');el.style.opacity=1;
  clearTimeout(comentElT);comentElT=setTimeout(()=>{el.style.opacity=0;},2500);
 }
