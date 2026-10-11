@@ -12,11 +12,15 @@ body{background:radial-gradient(1200px 700px at 50% -10%,#1b2547 0%,var(--bg) 62
 #stage{position:relative;width:min(98vw,calc((100dvh - 22px)*2.1071));user-select:none}
 canvas{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 12px 50px #000c,0 0 30px #f5c45118}
 #hud{position:absolute;top:8px;left:0;right:0;display:flex;justify-content:center;pointer-events:none}
-#score{display:flex;align-items:center;gap:14px;background:linear-gradient(180deg,#162040f2,#0a1024ee);border:1px solid #2a3757;border-radius:999px;padding:6px 20px;box-shadow:0 6px 18px #000c}
-#score .team{font-weight:800;font-size:.82rem;color:var(--gold);letter-spacing:.5px;display:flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px 2px 6px;background:#141c3a;transition:box-shadow .25s}
-#score .dot{width:13px;height:13px;border-radius:50%;border:2px solid #fff6;display:inline-block}
-#score .num{font-size:1.35rem;font-weight:900;min-width:26px;text-align:center;color:#fff}
-#score .clock{font-size:.9rem;color:var(--cy);font-weight:700;min-width:46px;text-align:center}
+#score{display:flex;align-items:center;gap:9px;background:linear-gradient(180deg,#162040f2,#0a1024ee);border:1px solid #2a3757;border-radius:999px;padding:3px 13px;box-shadow:0 6px 18px #000c}
+#score .team{font-weight:800;font-size:.74rem;color:var(--gold);letter-spacing:.5px;display:flex;align-items:center;gap:5px;border-radius:999px;padding:1px 7px 1px 4px;background:#141c3a;transition:box-shadow .25s}
+#compChip{display:none;align-items:center;gap:4px;font-weight:900;font-size:.64rem;letter-spacing:.08em;border:1px solid;border-radius:999px;padding:2px 8px;background:#0a1024;white-space:nowrap}
+body.comp #compChip{display:inline-flex}
+#teclas{transition:opacity .22s}
+body.comp-rp #teclas{opacity:0;visibility:hidden;transition:opacity .16s,visibility 0s linear .17s}   /* 🤫 en la repetición los mandos se evaporan */
+#score .dot{width:11px;height:11px;border-radius:50%;border:2px solid #fff6;display:inline-block}
+#score .num{font-size:1.08rem;font-weight:900;min-width:19px;text-align:center;color:#fff}
+#score .clock{font-size:.78rem;color:var(--compc,#22d3ee);font-weight:700;min-width:38px;text-align:center}
 #score .sep{color:#4d5a7d}
 #banner{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:6}
 #banner.on{display:flex}
@@ -31,15 +35,15 @@ canvas{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 12px
  #banner .btnrow{margin-top:9px}
  #banner .btnrow .bbtn2{padding:7px 20px;font-size:.72rem}
 }
-#banner .big{font-size:clamp(2.6rem,10vw,6rem);font-weight:900;letter-spacing:.1em;color:#fff;text-shadow:0 0 34px #f5c451,0 6px 0 #93760f,0 8px 30px #000;font-style:italic;animation:bounceIn .45s cubic-bezier(.2,1.5,.4,1) both;text-align:center;padding:0 10px}
+#banner .big{font-size:clamp(2.6rem,10vw,6rem);font-weight:900;letter-spacing:.1em;color:#fff;text-shadow:0 0 34px var(--compc,#f5c451),0 6px 0 var(--compd,#93760f),0 8px 30px #000;font-style:italic;animation:bounceIn .45s cubic-bezier(.2,1.5,.4,1) both;text-align:center;padding:0 10px}
 #banner .sub{margin-top:6px;font-size:.95rem;color:#ffdfe6;letter-spacing:.14em;font-weight:700;animation:fadeUp .8s .15s both;text-align:center;line-height:1.9}
 #banner .stats{margin-top:12px;font-size:.78rem;color:#9fb0d8;letter-spacing:.06em;background:#0a1024cc;border:1px solid #2a3757;border-radius:10px;padding:8px 18px;display:none;max-height:52vh;overflow-y:auto}   /* 🚫 nunca cortada: el acta se desliza si crece */
 #banner.final .stats{margin:10px auto 0;max-width:430px;text-align:left;line-height:1.75}
 .ftCol{font-weight:900;letter-spacing:.1em;font-size:.72rem;color:#fff;margin-top:6px}
 .ftScorer{font-size:.86rem;color:#e8ecfa;font-weight:700;animation:ftUp .45s both}
 @keyframes ftUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-#score .live{display:inline-flex;align-items:center;gap:4px;font-size:.56rem;font-weight:900;color:#ff5a5a;letter-spacing:1.2px;text-transform:uppercase}
-#score .live i{width:7px;height:7px;border-radius:50%;background:#ff3b3b;animation:lv 1.1s infinite}
+#score .live{display:inline-flex;align-items:center;gap:3px;font-size:.5rem;font-weight:900;color:#ff5a5a;letter-spacing:1px;text-transform:uppercase}
+#score .live i{width:6px;height:6px;border-radius:50%;background:#ff3b3b;animation:lv 1.1s infinite}
 @keyframes lv{50%{opacity:.22}}
 #coment{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);max-width:88%;background:#0a1024e8;border:1px solid #2a3757;border-radius:999px;padding:5px 18px;font-size:.74rem;font-weight:700;color:#ffe9a8;opacity:0;transition:opacity .25s;pointer-events:none;z-index:8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ftMvp{margin:10px 0 2px;padding:6px 10px;background:linear-gradient(135deg,#f5c45122,#f5c4510b);border:1px solid #d4af3766;border-radius:9px;color:#ffd76d;font-weight:900;text-align:center;font-size:.9rem}
@@ -147,9 +151,11 @@ body.touch #ctrl .kb{display:none}
 #taca{position:fixed;inset:auto 8px 8px auto;font-size:.58rem;color:#4d5a7d;z-index:9}
 /* pantalla bajita (móvil apaisado): marcador compacto (botones ya NO se encogen) */
 @media (max-height:440px){
- #score{padding:3px 12px;gap:10px}
- #score .num{font-size:1.05rem}
- #score .team{font-size:.68rem}
+ #score{padding:2px 10px;gap:7px}
+ #score .num{font-size:.98rem}
+ #score .team{font-size:.64rem}
+ #compChip{font-size:.56rem;padding:1px 6px}
+ #score .live{display:none}
 }
 /* aviso "gira tu teléfono" con pausa automática */
 #rotHint{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;background:#070a18f2;text-align:center;padding:22px;gap:8px}
@@ -161,7 +167,7 @@ body.touch #ctrl .kb{display:none}
 /* entretiempo FIFA-lite 🍊 */
 #ht{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;background:#070a18f2;padding:calc(18px + env(safe-area-inset-top)) 18px 18px;text-align:center;gap:10px}
 #ht.on{display:flex}
-#ht .big{font-size:clamp(1.5rem,7vw,2.8rem);font-weight:900;color:var(--gold);letter-spacing:.06em;text-shadow:0 0 26px #f5c45166;font-style:italic;animation:bounceIn .45s cubic-bezier(.2,1.5,.4,1) both}
+#ht .big{font-size:clamp(1.5rem,7vw,2.8rem);font-weight:900;color:var(--compc,#f5c451);letter-spacing:.06em;text-shadow:0 0 26px var(--compc,#f5c451)66;font-style:italic;animation:bounceIn .45s cubic-bezier(.2,1.5,.4,1) both}
 #ht .sub{color:#c9d3ea;font-size:.84rem}
 #ht #htScore{font-weight:900;color:#fff;font-size:1.12rem;letter-spacing:.1em}
 #ht #htScore .htmini{display:block;font-weight:600;font-size:.72rem;color:#9fd4ff;letter-spacing:.04em;margin-top:6px;text-transform:none}
@@ -234,6 +240,7 @@ body.touch #ctrl .kb{display:none}
     <span class="team" id="tName"><span class="dot" id="dotH"></span>TU CLUB</span>
     <span class="num" id="sHome">0</span><span class="sep">-</span><span class="num numA" id="sAway">0</span>
     <span class="clock" id="clock">2:00</span>
+    <span id="compChip">🏆 COPA</span>
     <span class="live" id="liveI"><i></i>EN VIVO</span>
     <span class="team" id="tNameA"><span class="dot" id="dotA"></span>RIVAL</span>
   </div></div>
@@ -350,6 +357,17 @@ const BF=(()=>{if(!_dq.has('diff'))return 1;
  const lv=Math.max(0,Math.min(4,parseInt(_dq.get('diff')||'1',10)||0));
  const dpc=Math.max(0,Math.min(4,(parseFloat(_dq.get('dpc')||'100')||100)/100));
  return Math.max(.45,Math.min(1.6,DIFFBASE[lv]*dpc));})();
+
+/* 🏆 COMPETICIONES: el torneo ya entra a la cancha — el marcador y cada transición llevan su bandera.
+   Sin padrino (cancha libre): look de siempre, píxel por píxel. */
+const COMPS={
+ liga:{icon:'⚽',name:'LIGA',c:'#f5c451',cd:'#93760f'},
+ copa:{icon:'🏆',name:'COPA',c:'#22d3ee',cd:'#0e7490'},
+ super:{icon:'🛡️',name:'SUPER COPA',c:'#c084fc',cd:'#6d28d9'},
+ ut:{icon:'🎮',name:'ULTIMATE TEAM',c:'#f472b6',cd:'#9d174d'},
+ draft:{icon:'🎪',name:'DRAFT',c:'#fb923c',cd:'#c2410c'}};
+const COMP=(()=>{const k=_dq.get('comp'),t=COMPS[k];if(!t)return null;
+ const x=_dq.get('compx');return Object.assign({},t,{key:k,label:(x&&x.trim())?x.trim().toUpperCase():t.name});})();
 
 /* ── sonido sintetizado (WebAudio, sin archivos) ── */
 const SFX={ctx:null,on:true,
@@ -753,6 +771,7 @@ function newMatch(xiPicks){
  tn.childNodes[1].textContent=S.clubH.n.toUpperCase();ta.childNodes[1].textContent=S.clubA.n.toUpperCase();
  paintDot('dotH',S.clubH);
  paintDot('dotA',S.clubA);
+ applyComp();                                                 /* 🏆 el torneo firma el marcador */
  /* 📺 MARCADOR DE TELE: las píldoras se pintan del club de cada uno */
  tn.style.background='linear-gradient(90deg,'+S.clubH.c1+','+S.clubH.c2+')';tn.style.color=S.clubH.tx||'#fff';
  ta.style.background='linear-gradient(90deg,'+S.clubA.c2+','+S.clubA.c1+')';ta.style.color=S.clubA.tx||'#fff';
@@ -780,6 +799,19 @@ function hideBanner(){
  bn.classList.remove('on');bn.classList.remove('final');bn.style.pointerEvents='none';
  document.getElementById('bannerBtns').style.display='none';
  document.getElementById('bannerStats').style.display='none';
+}
+function applyComp(){
+ if(!COMP)return;
+ document.body.classList.add('comp');
+ document.body.style.setProperty('--compc',COMP.c);
+ document.body.style.setProperty('--compd',COMP.cd);
+ const ch=document.getElementById('compChip');
+ ch.textContent=COMP.icon+' '+COMP.label;
+ ch.style.color=COMP.c;ch.style.borderColor=COMP.c+'66';
+ const sc=document.getElementById('score');
+ sc.style.borderColor=COMP.c+'88';sc.style.boxShadow='0 6px 18px #000c,0 0 13px '+COMP.c+'38';
+ const rb=document.getElementById('rpBadge');
+ rb.style.background=COMP.c;rb.style.color='#0b0d17';        /* 📺 hasta la repetición va pintada del torneo */
 }
 function showBanner(big,sub){
  document.getElementById('banner').querySelector('.big').textContent=big;
@@ -1789,11 +1821,21 @@ function trDraw(){
  cx.fillStyle='#04060f';cx.fillRect(0,0,W,H);
  const x0=-160+(TR.t/2)*(W+320);                        /* franja FIFA dorada barriendo */
  cx.globalAlpha=Math.min(1,TR.a*2.2)*.95;
- cx.fillStyle='#f5c451';
+ cx.fillStyle=COMP?COMP.c:'#f5c451';
  cx.beginPath();cx.moveTo(x0,0);cx.lineTo(x0+64,0);cx.lineTo(x0+18,H);cx.lineTo(x0-46,H);cx.closePath();cx.fill();
  cx.globalAlpha=Math.min(1,TR.a*2.2)*.35;
- cx.fillStyle='#fff';
+ cx.fillStyle='#fff';                                        /* la hebra FIFA queda blanca: la bandera va en la franja madre */
  cx.beginPath();cx.moveTo(x0+64,0);cx.lineTo(x0+74,0);cx.lineTo(x0+28,H);cx.lineTo(x0+18,H);cx.closePath();cx.fill();
+ if(COMP){                                                     /* 🏆 sello del torneo en el clímax del wipe */
+  cx.globalAlpha=Math.min(1,TR.a*1.6);
+  cx.textAlign='center';
+  cx.font='italic 900 '+Math.round(Math.min(56,Math.max(28,H*.085)))+'px system-ui,Segoe UI,Arial,sans-serif';
+  cx.fillStyle='#fff';cx.fillText(COMP.icon+' '+COMP.label,W/2,H/2-4);
+  cx.fillStyle=COMP.c;cx.fillRect(W/2-70,H/2+8,140,4);
+  cx.globalAlpha=Math.min(1,TR.a*1.6)*.55;
+  cx.font='800 12px system-ui,Segoe UI,Arial,sans-serif';
+  cx.fillStyle='#cbd5f5';cx.fillText('FC27 · CANCHA',W/2,H/2+32);
+ }
  cx.restore();
 }
 /* 🎉 FESTEJO: el goleador sale FLECHADO hacia su tribuna (rodada al banderín) */
@@ -1843,8 +1885,9 @@ function startReplay(){
   S.rp.from=S.rec.length-S.rp.win;
   S.st='replay';
   S.fx.length=0;
-  document.getElementById('rpBadge').textContent='⏪ REPETICIÓN';
+  document.getElementById('rpBadge').textContent='⏪ REPETICIÓN'+(COMP?' · '+COMP.name:'');
   document.getElementById('rpUI').classList.add('on');
+  document.body.classList.add('comp-rp');                     /* 🤫 mandos fuera: solo queda la jugada */
  },5);
 }
 function replayTick(dt){
@@ -1865,6 +1908,7 @@ function endReplay(){
  cut(()=>{                                                   /* ✨ de la tele al saque, tapado */
   S.rp=null;S.owner=null;
   document.getElementById('rpUI').classList.remove('on');
+  document.body.classList.remove('comp-rp');
   after();
  },5);
 }

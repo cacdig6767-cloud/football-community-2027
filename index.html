@@ -38442,8 +38442,8 @@ window.FC27Bridge = (function () {
   /* TODOS los partidos a cancha: tarjeta despacha por tipo · liga=calendario · copa/supercopa=enfrentamiento del evento */
   function launchEvent(ev) {
     if (!ev) ev = { act: 'league' };
-    if (ev.act === 'cup') return launchComp('cup', ev.home, ev.away, ev.ci);
-    if (ev.act === 'supercup') return launchComp('supercup', ev.home, ev.away, null);
+    if (ev.act === 'cup') return launchComp('cup', ev.home, ev.away, ev.ci, ev.comp);
+    if (ev.act === 'supercup') return launchComp('supercup', ev.home, ev.away, null, ev.comp);
     return launch();
   }
   function launch() {
@@ -38456,7 +38456,7 @@ window.FC27Bridge = (function () {
     if (!m) return;
     launchComp('league', m.home, m.away, null);
   }
-  function launchComp(kind, home, away, ci) {
+  function launchComp(kind, home, away, ci, compN) {
     var MC = mcRef();
     if (!MC || !MC.state) return;
     var s = MC.state;
@@ -38480,8 +38480,11 @@ window.FC27Bridge = (function () {
     if (roster.filter(function (f) { return f.p !== 'POR'; }).length < 11) return;  /* sin 11 de campo no hay baile */
     FC27Bridge.pending = { gh: null, ga: null, home: home, away: away, kind: kind, ci: ci };  /* no arrastrar resultados viejos de una tanda anterior */
     var pcA = pairColors(opp), pcH = pairColors(mine);
+    var compK = kind === 'supercup' ? 'super' : (kind === 'cup' ? 'copa' : 'liga');
+    var compX = (typeof compN === 'string' && compN) ? compN : (kind === 'league' ? ((s.league && s.league.name) || 'LIGA') : '');
     var q = ['career=1', 'club=' + encodeURIComponent(mine), 'rival=' + encodeURIComponent(opp),
       'diff=' + (typeof s.diff === 'number' ? s.diff : 0), 'dpc=' + (s.diffPct == null ? 100 : s.diffPct),
+      'comp=' + compK, 'compx=' + encodeURIComponent(compX),   /* 🏆 el torneo entra a la cancha */
       'h1=' + encodeURIComponent(pcH[0]), 'h2=' + encodeURIComponent(pcH[1]),
       'a1=' + encodeURIComponent(pcA[0]), 'a2=' + encodeURIComponent(pcA[1]),
       'form=' + encodeURIComponent(s.formation || '4-3-3'),
