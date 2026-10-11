@@ -1802,36 +1802,13 @@ input[type="range"]{accent-color:#00ff87}
         <div class="fc-menu-grid">
             <button class="fc-btn fc-btn-wide" style="border-color:rgba(255,214,0,.6);background:linear-gradient(100deg,rgba(255,214,0,.16),rgba(0,229,118,.08));box-shadow:0 0 24px rgba(255,214,0,.14)" onclick="Game.showScreen('screen-player-career')">⚽🐐 Carrera Jugador<small>¡NUEVO en 2.0! Vive los momentos como futbolista — al retirarte pasas al banquillo</small></button>
             <button class="fc-btn fc-btn-wide" onclick="SaveUI.openLoad()">📋 Carrera Manager<small>Continúa tu partida, crea una nueva o importa un archivo</small></button>
-            <button class="fc-btn fc-btn-wide" style="border-color:rgba(192,132,252,.6);background:linear-gradient(100deg,rgba(192,132,252,.16),rgba(245,196,81,.08));box-shadow:0 0 24px rgba(192,132,252,.14)" onclick="Game.showScreen('screen-ultimate')">🃏 ULTIMATE TEAM<small>¡NUEVO MODO! Sobres, colección, gym sin techo y partidos vivos — hasta dificultad 🛸 Galáctica</small></button>
+            <button class="fc-btn fc-btn-wide" style="border-color:rgba(192,132,252,.6);background:linear-gradient(100deg,rgba(192,132,252,.16),rgba(245,196,81,.08));box-shadow:0 0 24px rgba(192,132,252,.14)" onclick="window.open('ultimate-team.html','_blank')">🃏 ULTIMATE TEAM<small>¡NUEVO MODO! Sobres, colección, gym sin techo y partidos vivos — hasta dificultad 🛸 Galáctica</small></button>
             <button class="fc-btn" onclick="RosterEditor.open()">✏️ Editor<small>Plantillas · crea cracks · exporta/importa</small></button>
             <button class="fc-btn" onclick="Game.showScreen('screen-settings')">⚙️ Ajustes<small>Música, IA y opciones</small></button>
             <button class="fc-btn" onclick="Game.showScreen('screen-info')">ℹ️ Info<small>Antes de jugar · Términos</small></button>
         </div>
         <div class="fc-menu-foot">El fútbol es de todos · Temporada 2027</div>
     </div>
-</div>
-
-<div id="screen-ultimate" class="hidden">
-<style>
-#screen-ultimate{position:fixed;inset:0;z-index:120;background:#070a12;display:flex;flex-direction:column}
-#screen-ultimate .ut-bar{display:flex;align-items:center;gap:8px;padding:7px 12px;background:linear-gradient(90deg,#0c1020,#171331);border-bottom:1px solid rgba(192,132,252,.35);flex-wrap:wrap}
-#screen-ultimate .ut-t{font-family:'Barlow Condensed';letter-spacing:.14em;text-transform:uppercase;font-size:1.05rem;font-weight:800;color:#c084fc;white-space:nowrap}
-#screen-ultimate .ut-bar button{border:none;border-radius:18px;padding:7px 15px;font-family:'Barlow Condensed';font-size:.9rem;letter-spacing:.05em;font-weight:800;cursor:pointer}
-#screen-ultimate .ut-back{background:linear-gradient(100deg,#19e5ff,#2b7fff);color:#04121f}
-#screen-ultimate .ut-full{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.22)}
-#screen-ultimate .ut-full:hover{border-color:#c084fc}
-#screen-ultimate iframe{flex:1;border:none;width:100%;background:#0b0f1a}
-#screen-ultimate .ut-note{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:.9rem;text-align:center;padding:20px}
-#screen-ultimate .ut-note.on{display:flex}
-</style>
-<div class="ut-bar">
- <button class="ut-back" onclick="Game.showScreen('screen-main-menu')">← Menú principal</button>
- <span class="ut-t">🃏 Ultimate Team</span>
- <span style="flex:1"></span>
- <button class="ut-full" onclick="document.getElementById('ut-frame').src='ultimate-team.html'">↻ Recargar modo</button>
- <button class="ut-full" onclick="window.open('ultimate-team.html','_blank')">⤴ En pestaña completa</button>
-</div>
-<iframe id="ut-frame" src="ultimate-team.html" title="FC 2027 · Ultimate Team"></iframe>
 </div>
 
 <div id="screen-roster-editor" class="hidden">
@@ -2306,7 +2283,6 @@ input[type="range"]{accent-color:#00ff87}
                                 <p id="news-body">Has sido nombrado nuevo entrenador.</p>
                                 <button class="btn-primary" onclick="ManagerCareer.playNextMatch()">▶ Jugar partido</button>
                                 <button class="btn-primary" onclick="FC27Bridge.launch()" style="background:#f5c451;color:#161307;margin-left:6px">🎮 Jugar en cancha</button>
-                                <button class="btn-primary" onclick="FC27Bridge.launch()" style="background:#f5c451;color:#161307;margin-left:6px">🎮 Jugar en cancha</button>
                             </section>
                             <section class="fc27-card">
                                 <h3 class="fc27-h">Tareas del mánager</h3>
@@ -2343,7 +2319,6 @@ input[type="range"]{accent-color:#00ff87}
                             <div class="fc27-dim" id="fc-next-round">Jornada 1</div>
                             <div class="fc27-dim">🗓️ <span id="next-match-date">-</span></div>
                             <button class="btn-primary fc27-block" onclick="ManagerCareer.playNextMatch()">▶ Jugar</button>
-                            <button class="btn-primary fc27-block" onclick="FC27Bridge.launch()" style="background:#f5c451;color:#161307;margin-top:6px">🎮 Jugar en cancha</button>
                             <button class="btn-primary fc27-block" onclick="FC27Bridge.launch()" style="background:#f5c451;color:#161307;margin-top:6px">🎮 Jugar en cancha</button>
                         </section>
                         <section class="fc27-card">
@@ -38464,6 +38439,13 @@ window.FC27Bridge = (function () {
   /* overlay */
   var ov = null;
   function close() { if (ov && ov.parentNode) ov.parentNode.removeChild(ov); ov = null; }
+  /* TODOS los partidos a cancha: tarjeta despacha por tipo · liga=calendario · copa/supercopa=enfrentamiento del evento */
+  function launchEvent(ev) {
+    if (!ev) ev = { act: 'league' };
+    if (ev.act === 'cup') return launchComp('cup', ev.home, ev.away, ev.ci);
+    if (ev.act === 'supercup') return launchComp('supercup', ev.home, ev.away, null);
+    return launch();
+  }
   function launch() {
     var MC = mcRef();
     if (!MC || !MC.state) return;
@@ -38472,8 +38454,19 @@ window.FC27Bridge = (function () {
     var round = s.fixtures[s.currentRound] || [], m = null;
     round.forEach(function (x) { if (!m && !x.played && (x.home === s.myTeam || x.away === s.myTeam)) m = x; });
     if (!m) return;
-    var mine = s.myTeam, opp = (m.home === mine ? m.away : m.home);
-    var oppTeam = (s.teams || []).filter(function (t) { return t.name === opp; })[0] || { rating: 84 };
+    launchComp('league', m.home, m.away, null);
+  }
+  function launchComp(kind, home, away, ci) {
+    var MC = mcRef();
+    if (!MC || !MC.state) return;
+    var s = MC.state;
+    if (!s.myTeam || (home !== s.myTeam && away !== s.myTeam)) return;
+    var mine = s.myTeam, opp = (home === mine ? away : home);
+    var oppTeam = (s.teams || []).filter(function (t) { return t.name === opp; })[0];
+    var oppRating = (oppTeam && oppTeam.rating) || (function () {
+      try { if (typeof ratingOfName === 'function') return ratingOfName(opp); } catch (eR) {}
+      return 84;
+    })() || 84;
     /* fichas de MI plantel: XI titular primero, banca después, el POR al final del montón de campo */
     var xiSet = {};
     (s.startingXI || []).forEach(function (id) { xiSet[id] = 1; });
@@ -38485,14 +38478,15 @@ window.FC27Bridge = (function () {
     var gk = xiT.filter(function (p) { return p.pos === 'GK'; })[0] || bench.filter(function (p) { return p.pos === 'GK'; })[0];
     if (gk) roster.push({ n: String(gk.name).slice(0, 14), r: Math.max(40, Math.min(116, gk.rating || 70)), p: 'POR' });
     if (roster.filter(function (f) { return f.p !== 'POR'; }).length < 11) return;  /* sin 11 de campo no hay baile */
-    FC27Bridge.pending = null;  /* no arrastrar resultados viejos de una tanda anterior */
+    FC27Bridge.pending = { gh: null, ga: null, home: home, away: away, kind: kind, ci: ci };  /* no arrastrar resultados viejos de una tanda anterior */
     var pcA = pairColors(opp), pcH = pairColors(mine);
     var q = ['career=1', 'club=' + encodeURIComponent(mine), 'rival=' + encodeURIComponent(opp),
+      'diff=' + (typeof s.diff === 'number' ? s.diff : 0), 'dpc=' + (s.diffPct == null ? 100 : s.diffPct),
       'h1=' + encodeURIComponent(pcH[0]), 'h2=' + encodeURIComponent(pcH[1]),
       'a1=' + encodeURIComponent(pcA[0]), 'a2=' + encodeURIComponent(pcA[1]),
       'form=' + encodeURIComponent(s.formation || '4-3-3'),
       'roster=' + encodeURIComponent(JSON.stringify(roster)),
-      'rosterA=' + encodeURIComponent(JSON.stringify(rosterRival(oppTeam.rating)))].join('&');
+      'rosterA=' + encodeURIComponent(JSON.stringify(rosterRival(oppRating)))].join('&');
     ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:#000;z-index:99999;display:flex;flex-direction:column';
     var bar = document.createElement('div');
@@ -38515,19 +38509,32 @@ window.FC27Bridge = (function () {
     var d = e && e.data;
     if (!d || d.type !== 'FC27_RESULT' || !ov) return;
     if (typeof d.gh !== 'number' || typeof d.ga !== 'number') return;
+    var p = FC27Bridge.pending || { gh: null, ga: null, home: null, away: null, kind: 'league', ci: null };
+    p.gh = d.gh; p.ga = d.ga;   /* orientado a MÍ (el haxball siempre me pone de local) */
+    FC27Bridge.pending = p;
     close();
-    FC27Bridge.pending = { gh: d.gh, ga: d.ga };     /* orientado a MÍ (el haxball siempre me pone de local) */
+    if (p.kind === 'cup') {
+      try { var _sk = mcRef(); if (_sk && _sk.state) _sk.state._kmSkip81 = true; } catch (eN2) {}  /* misma vía que el "omitir momentos": los momentos YA se jugaron en cancha */
+      try { Cups.play(p.ci); } catch (eC) {} return;
+    }
+    if (p.kind === 'supercup') {
+      try { var _sk2 = mcRef(); if (_sk2 && _sk2.state) _sk2.state._kmSkip81 = true; } catch (eN3) {}
+      try { Supercup.play(); } catch (eS) {}
+      try { var _rs = mcRef(); if (_rs && _rs.state) _rs.state._kmSkip81 = false; } catch (eN4) {}  /* no dejar la llave puesta: afectaría a la próxima copa real */
+      return;
+    }
     try { var _mcK = mcRef(); if (_mcK && _mcK.state) _mcK.state._kmDone = true; } catch (eN) {}  /* saltar Key Moments: el momento YA se jugó en cancha */
     try { var _mc=mcRef(); if(_mc) _mc.playNextMatch(); } catch (e2) {}
   });
   /* llamado por simulateMatch por cada cruce de la jornada: solo dispara en MI partido */
   function _applyPending(self, match, homeTeam, awayTeam) {
-    var p = FC27Bridge.pending; if (!p) return false;
+    var p = FC27Bridge.pending; if (!p || typeof p.gh !== 'number') return false;
     var mine = self.state.myTeam;
     if (!homeTeam) homeTeam = (self.state.teams || []).filter(function (t) { return t.name === match.home; })[0] || null;
     if (!awayTeam) awayTeam = (self.state.teams || []).filter(function (t) { return t.name === match.away; })[0] || null;
     if (match.played) return false;
-    if (match.home !== mine && match.away !== mine) return false;
+    var itsMe = (p.home && p.away) ? (match.home === p.home && match.away === p.away) : (match.home === mine || match.away === mine);
+    if (!itsMe) return false;
     var homeIsMine = match.home === mine;
     match.homeGoals = homeIsMine ? p.gh : p.ga;
     match.awayGoals = homeIsMine ? p.ga : p.gh;
@@ -38550,7 +38557,25 @@ window.FC27Bridge = (function () {
       _MCb.simulateMatch = w27;
     }
   } catch (eB) {}
-  return { launch: launch, _applyPending: _applyPending, pending: null };
+  /* copas y supercopa comparten esta picadora: clavo el marcador de cancha solo a MI cruce (por nombres) */
+  try {
+    if (typeof Cups !== 'undefined' && Cups.simMatch && !Cups.simMatch._fc27) {
+      var _simCup = Cups.simMatch;
+      var wc2 = function (m2, mine2) {
+        var p2 = FC27Bridge.pending;
+        if (p2 && typeof p2.gh === 'number' && m2 && !m2.played && m2.h === p2.home && m2.a === p2.away && p2.kind !== 'league') {
+          var mc2 = mcRef();
+          var homeIsMine = (mc2 && mc2.state) ? (m2.h === mc2.state.myTeam) : (m2.h === p2.home);
+          FC27Bridge.pending = null;
+          return homeIsMine ? [p2.gh, p2.ga] : [p2.ga, p2.gh];
+        }
+        return _simCup.apply(this, arguments);
+      };
+      wc2._fc27 = true;
+      Cups.simMatch = wc2;
+    }
+  } catch (eB2) {}
+  return { launch: launch, launchEvent: launchEvent, launchComp: launchComp, _applyPending: _applyPending, pending: null };
 })();
 </script>
 <script>
@@ -38562,7 +38587,7 @@ window.FC27Bridge = (function () {
       var nheroC = function(ev) {
         var h = _heroC.apply(this, arguments);
         try {
-          if (ev && ev.act === 'league' && h.indexOf('hub2-cancha') < 0 && h.indexOf('</button>') >= 0) {
+          if (ev && (ev.act === 'league' || ev.act === 'cup' || ev.act === 'supercup') && h.indexOf('hub2-cancha') < 0 && h.indexOf('</button>') >= 0) {
             h = h.replace('</button>', '</button><button class="hub2-cta" id="hub2-cancha" style="background:linear-gradient(135deg,#7cffb2,#34d399)!important;color:#06281a!important;margin-left:10px">🎮 JUGAR EN CANCHA</button>');
           }
         } catch (e) {}
@@ -38577,7 +38602,7 @@ window.FC27Bridge = (function () {
         var r = _bdC.apply(this, arguments);
         try {
           var b = hub.querySelector('#hub2-cancha');
-          if (b) b.addEventListener('click', function() { try { FC27Bridge.launch(); } catch (e) {} });
+          if (b) b.addEventListener('click', function() { try { FC27Bridge.launchEvent(ev); } catch (e) {} });
         } catch (e) {}
         return r;
       };

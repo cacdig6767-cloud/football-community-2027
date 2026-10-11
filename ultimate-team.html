@@ -260,6 +260,11 @@ select,input[type=range]{background:#1a2542;border:1px solid #33436b;color:var(-
 @keyframes fxflick{to{opacity:.55}}
 .rew{text-align:center;font-size:1rem;margin:10px 0;line-height:1.9}
 .rew b{color:var(--gold)}
+
+/* ⚡ batería de rendimiento: lo que no está en pantalla no se pinta ni calcula */
+#coll-grid .card,#bench .bcard{content-visibility:auto}
+#coll-grid .card{contain-intrinsic-size:auto 240px 280px}
+#bench .bcard{contain-intrinsic-size:auto 66px 88px}
 </style>
 </head>
 <body>
@@ -2275,8 +2280,31 @@ function renderColl(){
   :collF.sort==='nm'?a.name.localeCompare(b.name)
   :b.rating-a.rating);
  $('coll-n').textContent=arr.length+' / '+state.cards.length;
- g.innerHTML=arr.map(c=>cardHTML(c)).join('');
- [...g.querySelectorAll('.card')].forEach((el,ix)=>el.onclick=()=>cardDetail(arr[ix].id));
+ /* ⚡ render por lotes (72 por frame): pantalla responde de inmediato y el resto de la colección
+    va aterrizando sin congelar el dedo; la tarjeta 1000 ya no come 300ms de click */
+ const tk=(renderColl._tk=(renderColl._tk||0)+1);
+ g.innerHTML='';
+ if(!arr.length){g.innerHTML='<div class="pan" style="grid-column:1/-1;text-align:center">Sin cartas con ese filtro 🔍</div>';return;}
+ if(typeof requestAnimationFrame!=='function'){
+  g.innerHTML=arr.map(c=>cardHTML(c)).join('');
+  [...g.querySelectorAll('.card')].forEach((el,ix)=>el.onclick=()=>cardDetail(arr[ix].id));
+  return;
+ }
+ const chunks=[];
+ for(let q0=0;q0<arr.length;q0+=72)chunks.push(arr.slice(q0,q0+72));
+ let stX=0;
+ const T1=document.createElement('template');
+ function moreC(){
+  if(renderColl._tk!==tk)return;      /* otro render más reciente manda */
+  const ch=chunks[stX];if(!ch)return;
+  T1.innerHTML=ch.map(c=>cardHTML(c)).join('');
+  const kids=[...T1.content.children];
+  g.appendChild(T1.content);           /* mueve las cartas vivas al grid */
+  kids.forEach((el,k)=>el.onclick=()=>cardDetail(ch[k].id));
+  stX++;
+  if(stX<chunks.length)requestAnimationFrame(moreC);
+ }
+ requestAnimationFrame(moreC);
 }
 function cardDetail(id){
  const c=cardById(id);if(!c)return;
@@ -2334,17 +2362,29 @@ function renderXI(){
   }else{d.innerHTML=`<div class="pc ph">+</div><span class="pps" style="display:block;text-align:center;color:#fff8">${s}</span>`;}
   d.onclick=()=>slotClick(i);
   P.appendChild(d);});
- /* banquillo */
+ /* banquillo — por lotes: la primera camada sale YA, las demás van pulsando por frame */
  const B=$('bench');B.innerHTML='';
- state.cards.filter(c=>state.xi.indexOf(c.id)<0).sort((a,b)=>b.rating-a.rating).forEach(c=>{
-  const b=document.createElement('div');b.className='bcard'+(benchSel===c.id?' sel':'');
-  const ra=c.version==='IF'?'totw':rar(c.rating),sk=skinOf(c);
-  if(sk)b.title='✨ '+sk.n;
-  b.innerHTML=`<div class="pc r-${sk?'':ra}${sk?sk.cls:''}"${sk?` style="${sk.css}"`:''}><span class="pflag pf-xs">${fcFlagOf(c.nat||'',16,11)}</span><span class="prt">${c.rating}</span><span class="pps">${c.sub||c.pos}</span><span class="pnm">${shortName(c.name)}</span></div>`;
-  b.onclick=()=>{benchSel=benchSel===c.id?null:c.id;renderXI();
-   if(benchSel)toast('👆 Ahora toca el puesto del campo donde entra '+shortName(c.name));};
-  B.appendChild(b);});
- if(!B.children.length)B.innerHTML='<div class="benchh" style="width:100%">Banquillo vacío: abre sobres 🎁</div>';
+ const bl=state.cards.filter(c=>state.xi.indexOf(c.id)<0).sort((a,b)=>b.rating-a.rating);
+ const bt=(renderXI._tk=(renderXI._tk||0)+1);
+ if(!bl.length){B.innerHTML='<div class="benchh" style="width:100%">Banquillo vacío: abre sobres 🎁</div>';}
+ else{
+  const TB=document.createElement('template');
+  let bq=0;
+  (function moreB(){
+   if(renderXI._tk!==bt)return;      /* otro renderXI más reciente manda */
+   const part=bl.slice(bq,bq+48);bq+=48;
+   const kids=part.map(c=>{
+    const sk=skinOf(c),ra=c.version==='IF'?'totw':rar(c.rating);
+    return {c:c,html:'<div class="bcard'+(benchSel===c.id?' sel':'')+'"'+(sk?' title="✨ '+sk.n+'"':'')+'><div class="pc r-'+(sk?'':ra)+(sk?sk.cls:'')+'"'+(sk?' style="'+sk.css+'"':'')+'><span class="pflag pf-xs">'+fcFlagOf(c.nat||'',16,11)+'</span><span class="prt">'+c.rating+'</span><span class="pps">'+(c.sub||c.pos)+'</span><span class="pnm">'+shortName(c.name)+'</span></div></div>'};
+   });
+   TB.innerHTML=kids.map(k=>k.html).join('');
+   const els=[...TB.content.children];
+   B.appendChild(TB.content);
+   els.forEach((el,k)=>{const cc=kids[k].c;el.onclick=()=>{benchSel=benchSel===cc.id?null:cc.id;renderXI();
+    if(benchSel)toast('👆 Ahora toca el puesto del campo donde entra '+shortName(cc.name));};});
+   if(bq<bl.length){if(typeof requestAnimationFrame==='function')requestAnimationFrame(moreB);else moreB();}
+  })();
+ }
  /* chips superiores */
  $('xi-rtg').textContent=teamRating()||'—';
  const f=fitPct();$('xi-fit').innerHTML='Encaje <b style="color:var(--gold)">'+f+'%</b>';
@@ -2772,9 +2812,10 @@ function renderDraft(){
   <p style="font-size:.8rem;color:var(--mut)">Equipo ${d.fmt} · rating medio <b>${draftRating(d)}</b> · ${d.w} victoria(s)</p>
   <div style="font-size:.78rem;color:var(--mut);margin:4px 0 10px">Rivales en subida: Semipro → Profesional → Leyenda → 💀 Mítico (el draft ignora el portal galáctico: aquí todo vale)</div>
   ${rows||'<p style="font-size:.8rem;color:var(--mut)">Aún sin partidos…</p>'}
-  ${nxt?`<button id="b-draft-play" style="margin-top:12px">▶ JUGAR R${d.results.length+1} vs ${nxt.tag} ${nxt.n}</button>`:''}
+  ${nxt?`<button id="b-draft-play" style="margin-top:12px">▶ JUGAR R${d.results.length+1} vs ${nxt.tag} ${nxt.n}</button><button id="b-draft-cancha" style="margin-top:12px;margin-left:8px;background:linear-gradient(120deg,#7cffb2,#34d399)!important;color:#05281a!important">🎮 R${d.results.length+1} EN CANCHA</button>`:''}
   <button class="ghost" id="b-draft-ab2" style="margin-top:10px;font-size:.72rem">🚪 Abandonar (pierdes premio y picks)</button>`;
  const bp=document.getElementById('b-draft-play');if(bp)bp.onclick=()=>{const r=playDraftRound();if(r&&r.err)toast(r.err);};
+ const bcd=document.getElementById('b-draft-cancha');if(bcd)bcd.onclick=()=>{try{if(window.UTBridge&&UTBridge.launchDraft){UTBridge.launchDraft();return;}}catch(e){}const r=playDraftRound();if(r&&r.err)toast(r.err);};
  const ab2=document.getElementById('b-draft-ab2');if(ab2)ab2.onclick=()=>abandonDraft();
 }
 /* navegación */
@@ -3118,17 +3159,74 @@ try{(function(){
          'h1='+encodeURIComponent(pcH[0]),'h2='+encodeURIComponent(pcH[1]),
          'a1='+encodeURIComponent(pcA[0]),'a2='+encodeURIComponent(pcA[1]),
          'form='+encodeURIComponent(st().formation||'4-3-3'),
+         'diff='+Math.min(4,tierIdx),'dpc=100',      /* 🧠 la escalera decide lo bravos que son los bots */
          'roster='+encodeURIComponent(JSON.stringify(roster)),
          'rosterA='+encodeURIComponent(JSON.stringify(crewRival(r.rival,(T.atk+T.dfn)/2)))].join('&');
   pendingMatch=r;
   openOv('🎮 Tu Club vs '+esc(r.rival)+' · '+esc(r.tier),FILE+'?'+q);
  }
 
+ /* ══ DRAFT en cancha: 4 rondas reales, el acta empuja la misma lógica de premios ══ */
+ var pendingDraft=null;
+ function fichasDraft(d){
+  var u=UT();if(!u)return null;
+  var slots=(u.FORMATION_SLOTS[d.fmt]||[]);
+  var out=[],i;
+  for(i=1;i<d.squad.length;i++){  /* slot 0 = POR del dibujo: cae al final */
+   var c=d.squad[i];
+   out.push({n:esc(String(c.name||'Ficha')).slice(0,14),r:Math.max(40,Math.min(116,Math.round(c.rating||70))),p:u.famOf(slots[i]||'MC')});
+  }
+  var g0=d.squad[0];
+  if(g0)out.push({n:esc(String(g0.name)).slice(0,14),r:Math.max(40,Math.min(116,Math.round(g0.rating||70))),p:'POR'});
+  return out;
+ }
+ function launchDraft(){
+  var u=UT();if(!u)return;
+  var s=st(),d=s&&s.draft;
+  if(!d||d.over){utToast('No hay draft activo.');return;}
+  if(d.step<11){utToast('Completa tu equipo del draft ('+d.step+'/11).');return;}
+  var r=(d.results||[]).length;
+  if(r>=4)return;
+  var T=u.TIERS[u.DRAFT_TIERSEQ[r]];
+  if(!T)return;
+  var riv=T.names[Math.floor(Math.random()*T.names.length)];
+  var roster=fichasDraft(d);
+  if(!roster||roster.filter(function(f){return f.p!=='POR';}).length<10){utToast('Tu XI del draft está incompleto.');return;}
+  pendingDraft={r:r,rival:riv};
+  var pcH=coloresUT('Tu Draft'),pcA=coloresUT(riv);
+  var q=['career=1','club='+encodeURIComponent('Tu Draft'),'rival='+encodeURIComponent(riv),'bus=ut',
+   'h1='+pcH[0],'h2='+pcH[1],'a1='+pcA[0],'a2='+pcA[1],
+   'form='+encodeURIComponent(d.fmt||'4-3-3'),
+   'diff='+Math.min(4,u.DRAFT_TIERSEQ[r]),'dpc=100',   /* 🧠 semipro → mítico: la subida también llega a la cancha */
+   'roster='+encodeURIComponent(JSON.stringify(roster)),
+   'rosterA='+encodeURIComponent(JSON.stringify(crewRival(riv,Math.round(T.atk))))].join('&');
+  openOv('🎪 Tu Draft vs '+riv+' · '+T.tag+' '+T.n,FILE+'?'+q);
+ }
+ function applyDraft(riv,gh,ga){
+  var u=UT();if(!u)return;
+  var s=st(),d=s&&s.draft;
+  if(!d||d.over)return;
+  var r=(d.results||[]).length;
+  if(r>=4)return;
+  var T=u.TIERS[u.DRAFT_TIERSEQ[r]];
+  if(!T)return;
+  var win=gh>ga?1:0;if(win)d.w++;     /* como en simulación: solo gana quien marca más */
+  d.results.push({tier:T.n,tag:T.tag,rival:riv,gf:gh,ga:ga,win:win});
+  if(d.results.length>=4)u.draftClose();      /* premios exactos del modo clásico */
+  u.save();u.refreshHUD();u.renderDraft();
+  utModal('<h2>🎪 CRÓNICA — DRAFT EN CANCHA</h2>'+
+   '<div class="rew"><b style="font-size:1.7rem">'+gh+' - '+ga+'</b><br>vs '+esc(riv)+' · '+T.tag+' '+T.n+'</div>'+
+   '<div class="rew">'+(win?'✅ Victoria':gh===ga?'🤝 Empate (no suma)':'❌ Derrota')+(d.results.length>=4?' — 🏁 torneo cerrado':' — ronda '+d.results.length+'/4')+'</div>'+
+   (d.results.length>=4&&d.prizeLabel?'<div class="rew" style="border-color:var(--gold);color:var(--gold)">🏆 '+esc(d.prizeLabel)+' · +'+u.fmt(d.prizeCoins||0)+' 💰</div>':'')+
+   '<div class="foot"><button id="m-okdr">Cerrar</button></div>');
+  var kk=document.getElementById('m-okdr');if(kk)kk.onclick=utCloseModal;
+ }
  window.addEventListener('message',function(e){
   var d=e&&e.data;
   if(!d||d.type!=='FC27_RESULT_UT'||!ov)return;
   if(typeof d.gh!=='number'||typeof d.ga!=='number')return;
   closeOv();
+  if(pendingDraft){var pd=pendingDraft;pendingDraft=null;try{applyDraft(pd.rival,d.gh,d.ga);}catch(errD){utToast('⚠️ '+errD.message);}return;}
   var r=pendingMatch;pendingMatch=null;
   var b=document.getElementById('b-cancha');if(b)b.disabled=false;
   if(!r)return;
@@ -3149,7 +3247,7 @@ try{(function(){
  });
 
  try{var hb=document.getElementById('b-cancha');if(hb)hb.onclick=launchUT;}catch(e){}
- window.UTBridge={launchUT:launchUT,_fichas:fichasUT,_pending:function(){return pendingMatch;}};
+ window.UTBridge={launchUT:launchUT,launchDraft:launchDraft,_fichas:fichasUT,_fichasDraft:fichasDraft,_pending:function(){return pendingMatch;},_pendingDraft:function(){return pendingDraft;}};
 })();
 </script>
 

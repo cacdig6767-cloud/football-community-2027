@@ -9,7 +9,7 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overscroll-behavior:none}
 body{background:radial-gradient(1200px 700px at 50% -10%,#1b2547 0%,var(--bg) 62%);font-family:system-ui,Segoe UI,Arial,sans-serif;color:#e8ecf5;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;overflow:hidden;touch-action:none;padding-top:6px;padding-bottom:4px}
-#stage{position:relative;width:min(98vw,calc((100dvh - 22px)*1.7857));user-select:none}
+#stage{position:relative;width:min(98vw,calc((100dvh - 22px)*2.1071));user-select:none}
 canvas{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 12px 50px #000c,0 0 30px #f5c45118}
 #hud{position:absolute;top:8px;left:0;right:0;display:flex;justify-content:center;pointer-events:none}
 #score{display:flex;align-items:center;gap:14px;background:linear-gradient(180deg,#162040f2,#0a1024ee);border:1px solid #2a3757;border-radius:999px;padding:6px 20px;box-shadow:0 6px 18px #000c}
@@ -106,7 +106,7 @@ canvas{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 12px
 .fchip{background:#0e1730;border:2px solid #2a3757;color:#9fb0d8;border-radius:10px;padding:11px 20px;font-size:.82rem;font-weight:900;cursor:pointer;letter-spacing:.05em;transition:.15s}
 .fchip:hover{border-color:#22d3ee}
 .fchip.sel{border-color:var(--gold);color:var(--gold);box-shadow:0 0 14px #f5c45133}
-#fmPitch{position:relative;width:min(92vw,400px);aspect-ratio:1000/560;border-radius:12px;overflow:hidden;background:linear-gradient(90deg,#0d7d3b,#0a5e2d);border:2px solid #ffffff2e;box-shadow:inset 0 0 34px #0007}
+#fmPitch{position:relative;width:min(92vw,400px);aspect-ratio:1180/560;border-radius:12px;overflow:hidden;background:linear-gradient(90deg,#0d7d3b,#0a5e2d);border:2px solid #ffffff2e;box-shadow:inset 0 0 34px #0007}
 #fmPitch::before{content:'';position:absolute;inset:8px;border:1.5px solid #ffffff26;border-radius:6px}
 #fmPitch::after{content:'';position:absolute;top:8px;bottom:8px;left:50%;border-left:1.5px solid #ffffff26}
 .fd{position:absolute;transform:translate(-50%,-50%);width:13px;height:13px;border-radius:50%;background:var(--gold);border:2px solid #10121c;box-shadow:0 2px 8px #000a}
@@ -120,19 +120,19 @@ canvas{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 12px
 @keyframes pulse{50%{transform:scale(1.045)}}
 /* móvil */
 #teclas{position:fixed;left:0;right:0;bottom:max(8px,env(safe-area-inset-bottom));display:none;justify-content:space-between;align-items:flex-end;padding:12px 14px 16px;z-index:8;pointer-events:none}
-#stick{width:110px;height:110px;border-radius:50%;border:2px solid #2a3757;background:#0a102088;position:relative;pointer-events:auto}
-#knob{position:absolute;width:46px;height:46px;border-radius:50%;background:#f5c451cc;left:32px;top:32px;box-shadow:0 4px 12px #000a}
-#btns{position:relative;width:246px;height:214px;pointer-events:auto;flex-shrink:0}
+#stick{width:100px;height:100px;border-radius:50%;border:2px solid #2a3757;background:#0a102088;position:relative;pointer-events:auto}
+#knob{position:absolute;width:42px;height:42px;border-radius:50%;background:#f5c451cc;left:29px;top:29px;box-shadow:0 4px 12px #000a}
+#btns{position:relative;width:216px;height:192px;pointer-events:auto;flex-shrink:0}   /* 🎮 más chicos: cancha a la vista */
 /* 🎮 clúster EA FC MOBILE: anillo dorado, cuadrante en diagonal (SHOOT arriba-derecha · THROUGH · SPRINT · PASS abajo-izquierda) */
 .bbtn{position:absolute;border-radius:50%;font-weight:900;letter-spacing:.5px;color:#fff;font-size:.7rem;line-height:1.3;
  background:radial-gradient(circle at 50% 32%,#1a2547 0%,#0c1330 58%,#05080f 100%);
  border:2px solid #d4af37;box-shadow:0 0 0 2px #080e1d,0 8px 20px #000c,inset 0 0 14px #0009;
  text-shadow:0 2px 5px #000;user-select:none;-webkit-user-select:none}
-.bbtn.a{width:76px;height:76px;left:0;top:138px}          /* PASE abajo-izquierda */
-.bbtn.b{width:96px;height:96px;right:4px;top:0;font-size:.8rem}   /* TIRO arriba-derecha, el grande */
-.bbtn.c{width:78px;height:78px;left:116px;top:112px}      /* ⚡ SPRINT abajo-centro */
-.bbtn.d{width:74px;height:74px;left:38px;top:56px}        /* 💙 HUECO arriba-izquierda */
-.bbtn.e{width:56px;height:56px;left:86px;top:0;font-size:.88rem}   /* 🔄 CAMBIO: el dedo del míster, arriba-centro */
+.bbtn.a{width:74px;height:74px;left:2px;top:112px}          /* PASE abajo-izquierda */
+.bbtn.b{width:84px;height:84px;right:4px;top:0;font-size:.78rem}  /* TIRO arriba-derecha, el grande */
+.bbtn.c{width:74px;height:74px;left:106px;top:92px}       /* ⚡ SPRINT abajo-centro */
+.bbtn.d{width:74px;height:74px;left:30px;top:42px}        /* 💙 HUECO arriba-izquierda */
+.bbtn.e{width:54px;height:54px;left:72px;top:0;font-size:.82rem}   /* 🔄 CAMBIO: el dedo del míster, arriba-centro */
 .bbtn.a{box-shadow:0 0 0 2px #080e1d,0 8px 20px #000c,inset 0 0 14px #0009,0 0 16px #16a34a44}
 .bbtn.b{box-shadow:0 0 0 2px #080e1d,0 8px 22px #000d,inset 0 0 14px #0009,0 0 18px #dc262655}
 .bbtn.c{box-shadow:0 0 0 2px #080e1d,0 8px 20px #000c,inset 0 0 14px #0009,0 0 16px #eab30844}
@@ -224,7 +224,7 @@ body.touch #ctrl .kb{display:none}
 </head>
 <body>
 <div id="stage">
-  <canvas id="cv" width="1000" height="560"></canvas>
+  <canvas id="cv" width="1180" height="560"></canvas>
   <div id="rpUI">
     <div id="rpBadge">⏪ REPETICIÓN</div>
     <div id="rpSkip">toca o pulsa cualquier tecla para seguir ⏩</div>
@@ -331,7 +331,7 @@ body.touch #ctrl .kb{display:none}
 const cv=document.getElementById('cv'),cx=cv.getContext('2d');
 cv.addEventListener('pointerdown',()=>{if(S.st==='replay')endReplay();});   /* ⏩ toca = saltar repetición */
 const W=cv.width,H=cv.height;
-const FIELD={x:46,y:34,w:908,h:492};
+const FIELD={x:46,y:34,w:1088,h:492};   /* 📏 CANCHA LARGA: como club grande, hay calle y área */
 const GOAL={h:140,depth:16};   /* ARCO GRANDE: como en FIFA arcade, las ocasiones entran ✊ */
 const CTRX=W/2,CTRY=H/2;
 const GKIDX=10;
@@ -342,6 +342,14 @@ const CFG={mode:'r',spdP:50,spdC:50,powP:50,powC:50,gkP:50,gkC:50,sta:50};
 try{const sv=JSON.parse(localStorage.getItem('fc27cfg')||'null');if(sv)Object.assign(CFG,sv);}catch(e){}
 const CF=k=>CFG.mode==='c'?(Math.max(0,Math.min(100,CFG[k]|0))/100+.5):1;
 const saveCfg=()=>{try{localStorage.setItem('fc27cfg',JSON.stringify(CFG));}catch(e){}};
+/* 🧠 DIFICULTAD VIAJERA: la del apartado de Carrera Manager (Aficionado…Ultimate) manda SOBRE la IA rival.
+   Sin padrino (cancha libre): los bots juegan como siempre (BF=1). */
+const DIFFBASE=[.62,.80,.96,1.12,1.28];
+const _dq=new URLSearchParams(location.search);
+const BF=(()=>{if(!_dq.has('diff'))return 1;
+ const lv=Math.max(0,Math.min(4,parseInt(_dq.get('diff')||'1',10)||0));
+ const dpc=Math.max(0,Math.min(4,(parseFloat(_dq.get('dpc')||'100')||100)/100));
+ return Math.max(.45,Math.min(1.6,DIFFBASE[lv]*dpc));})();
 
 /* ── sonido sintetizado (WebAudio, sin archivos) ── */
 const SFX={ctx:null,on:true,
@@ -552,6 +560,10 @@ const FRMH=[[462,280],[430,135],[430,425],
             [180,105],[180,225],[180,345],[180,465]];
 const FRM=[FRMH,FRMH.map(s=>[W-s[0],s[1]])];
 const GKX=[FIELD.x+24,FIELD.x+FIELD.w-24];
+/* 📏 la cancha creció (1000→1180): los dibujos viejos se estiran al centro nuevo conservando forma */
+const _mx=x=>Math.round((x-500)*(1180/1000)+590);
+for(let _i=0;_i<FRMH.length;_i++)FRMH[_i][0]=_mx(FRMH[_i][0]);
+FRM[0]=FRMH;FRM[1]=FRMH.map(s=>[W-s[0],s[1]]);
 /* ── 🧩 EL MÍSTER: dibujos (se eligen ANTES del partido; UT/Manager los inyectan) ── */
 const FORMS={
  '4-3-3':{d:'El clásico de bandas',spots:[[462,280],[430,135],[430,425],[330,150],[330,280],[330,410],[180,105],[180,225],[180,345],[180,465]]},
@@ -840,8 +852,8 @@ function camTick(dt){
  const clmax=touch&&S.st==='play'&&shootOn&&S.owner&&S.owner.team===0&&clamp((now()-shootT0)/900,0,1)>.7;   /* 🎥 el cañonazo a máxima carga pide PRIMER PLANO */
  const wantZ=touch?(S.st==='goal'&&S.cel?2.15:(clmax?1.95:1.8)):1;   /* 🎥 primer plano del festejo */
  CAM.z+=(wantZ-CAM.z)*Math.min(1,dt*5);
- const sc=CAM.z,vw=1000/sc,vh=560/sc,tp=camTarget();
- const tx=clamp(tp.x-vw/2,0,1000-vw),ty=clamp(tp.y-vh/2,0,560-vh);
+ const sc=CAM.z,vw=W/sc,vh=H/sc,tp=camTarget();
+ const tx=clamp(tp.x-vw/2,0,W-vw),ty=clamp(tp.y-vh/2,0,H-vh);
  const ease=1-Math.exp(-dt*6);
  CAM.vx+=(tx-CAM.vx)*ease;CAM.vy+=(ty-CAM.vy)*ease;
 }
@@ -930,7 +942,7 @@ function finK(p){return Math.pow(1.32,(100-(p.tir||70))/18);}        /* 🎯 des
 function pasK(p){return Math.pow(1.45,(100-((p.pas!=null?p.pas:p.dri)||70))/20);}        /* 🎩 desvío de entrega: MANDA EL PASE */
 function touch(p){return (Math.random()-.5)*0.11*pasK(p);}           /* delta angular del pase según su toque */
 function trapMax(p){return clamp(180+(p.dri||70)*6.2,360,840);}      /* 🪄 la bala que logra amortiguar tu primer control */
-function gkJit(g){return Math.max(0,(100-(g.def||92)))*2.1;}         /* 🧤 imprecisión de anticipación del portero */
+function gkJit(g){return Math.max(0,(100-(g.def||92)*(g.team===1?BF:1)))*2.1;}         /* 🧬🧠 la vista del portero, con tu dificultad */
 function staK(p){return Math.pow(1.35,(110-(p.r||105))/16);}         /* 💪 motor frío: los cracks se cansan menos */
 function tryAction(){
  const p=ctrl();if(!p||S.st!=='play')return;
@@ -978,11 +990,13 @@ function cpuShootCorner(p){
  const gkY=gkDef?gkDef.y:CTRY;
  const gy=CTRY+(gkY<=CTRY?30:-30)+(Math.random()-.5)*12;
  const a=ang(p,{x:gx,y:gy});
- const spd=(590+p.tir*1.25)*CF('powC');   /* 🎛️ potencia de la CPU */
+ const tirE=(p.tir||70)*(p.team===1?BF:1);                          /* 🧠 media efectiva del rival según tu dificultad */
+ const spd=(590+tirE*1.25)*CF('powC');   /* 🎛️ potencia de la CPU */
  const b=S.ball;
  const crl=Math.random()<.3?(Math.random()<.5?-1:1)*(.7+Math.random()*.5):0;   /* la CPU también riza */
- let aim=a+(Math.random()-.5)*.16*finK(p);                           /* 🧬 el remate CPU también sufre su mediocridad */
- if(crl)aim=aimCurve(p,spd,crl,CTRY+(gkY<=CTRY?40:-40))+(Math.random()-.5)*.08*finK(p);   /* …y la compensa: también enmarca */
+ const finE=Math.pow(1.32,(100-tirE)/18);
+ let aim=a+(Math.random()-.5)*.16*finE;                            /* 🧬 el remate CPU también sufre su mediocridad */
+ if(crl)aim=aimCurve(p,spd,crl,CTRY+(gkY<=CTRY?40:-40))+(Math.random()-.5)*.08*finE;   /* …y la compensa: también enmarca */
  b.x=p.x+Math.cos(aim)*(p.r+11);b.y=p.y+Math.sin(aim)*(p.r+11);
  b.vx=Math.cos(aim)*spd;b.vy=Math.sin(aim)*spd;
  b.passTo=null;b.freeT=.14;b.lastShooter=p;b.hot=spd>840;S.owner=null;p.hasBall=false;b.cross=false;
@@ -1312,7 +1326,7 @@ function aiRole(p,dt){
  }
  if(p.idx===GKIDX){
   /* portero CASERO: anclado AL CENTRO del arco; sale solo si la gana CLARO; ¡Y SE TIRA! 🧤 */
-  const gk=t===0?CF('gkP'):CF('gkC');                              /* 🎛️ reflejos de la sala */
+  const gk=t===0?CF('gkP'):CF('gkC')*BF;                          /* 🎛️🧠 reflejos de la sala, la sala de tu dificultad */
   const ownGoalX=t?FIELD.x+FIELD.w:FIELD.x;
   const towardMe=!S.owner&&((t===1&&b.vx>170&&b.x<ownGoalX)||(t===0&&b.vx<-170&&b.x>FIELD.x));
   if(towardMe){
@@ -1335,7 +1349,7 @@ function aiRole(p,dt){
     &&!S.players.some(q=>q.team!==t&&q.idx!==GKIDX&&dist(q,b)<dist(p,b)-12);
   /* 🎯 RONDÓN: la bomba al hueco se cuela detrás de la zaga y NADIE le gana la carrera → ¡portero-libero A CORTAR! */
   const ron=!S.owner&&!(b.passTo&&b.passTo.team===t)
-    &&(t?(b.x>ownGoalX-230&&b.x<ownGoalX):(b.x<ownGoalX+230&&b.x>ownGoalX))
+    &&(t?(b.x>ownGoalX-168&&b.x<ownGoalX):(b.x<ownGoalX+168&&b.x>ownGoalX))
     &&Math.abs(b.y-CTRY)<120&&Math.hypot(b.vx,b.vy)<620
     &&!chase
     &&!S.players.some(q=>q!==p&&dist(q,b)<dist(p,b)*.92);
@@ -1363,7 +1377,7 @@ function aiRole(p,dt){
   steer(p,gx-s*30,CTRY,dt,.97);
   const pressed=S.players.some(q=>q.team!==t&&q.idx!==GKIDX&&dist(q,p)<46);
   const gkDef=S.players.find(q=>q.idx===GKIDX&&q.team!==t);
-  if(dGoal<305&&Math.random()<.02+p.tir/9000){cpuShootCorner(p);}   /* arco grande → rifla de media distancia */
+  if(dGoal<305&&Math.random()<.02+((p.tir||70)*BF)/9000){cpuShootCorner(p);}   /* arco grande → rifla de media distancia */
   else if(pressed&&Math.random()<.06){
    const mates=S.players.filter(q=>q.team===t&&q!==p&&q.idx!==GKIDX&&(!S.outR||!S.outR.has(q.cr)));
    let best=null,bd=1e9;
@@ -1394,7 +1408,7 @@ function aiRole(p,dt){
    if(dO<p.r*3&&p.tackleCd<=0&&p.stun<=0){
     p.tackleCd=1.1;p.lunge=.22;
     const dir=ang(p,S.owner);p.vx+=Math.cos(dir)*400;p.vy+=Math.sin(dir)*400;
-    const rate=clamp((52+p.def-(S.owner.dri||70))/110,.18,.80);
+    const rate=clamp((52+p.def-(S.owner.dri||70))/110,.18,.80)*(p.team===1?BF:1);   /* 🧠 el segador rival respeta tu dificultad */
     if(Math.random()<rate)steal(p,S.owner);
     else{S.owner.stun=Math.max(S.owner.stun,.12);maybeFoul(p,S.owner);}
    }
@@ -1432,7 +1446,7 @@ function aiRole(p,dt){
 function steer(p,tx,ty,dt,run){
  /* control por velocidad deseada: llega SIN orbitar y frena al acercarse */
  const tired=.9+.1*Math.min(100,p.sta==null?100:p.sta)/100;
- const sp=(48+p.vel*1.4)*(p.hasBall?.9:1)*run*(p.spr?1.42:1)*tired*(p.team===0?CF('spdP'):CF('spdC'));   /* 🎛️ velocidad por bando */
+ const sp=(48+p.vel*1.4)*(p.hasBall?.9:1)*run*(p.spr?1.42:1)*tired*(p.team===0?CF('spdP'):CF('spdC')*BF);   /* 🎛️🧠 velocidad por bando, con la dificultad viajera */
  const dx=tx-p.x,dy=ty-p.y,m=Math.hypot(dx,dy)||1;
  const want=Math.min(sp,m*3.2);
  const k=Math.min(1,dt*6.5);
@@ -1577,6 +1591,10 @@ function sim(dt){
   if(p.stun>0){p.vx*=.88;p.vy*=.88;}
   p.x=clamp(p.x,FIELD.x+p.r,FIELD.x+FIELD.w-p.r);
   p.y=clamp(p.y,FIELD.y+p.r,FIELD.y+FIELD.h-p.r);
+  if(p.idx===GKIDX){                                   /* 🧤 correa del guardián PARA TODO: de su línea sale un paso fuera del área y flipa */
+   const gx0=p.team?FIELD.x+FIELD.w:FIELD.x;
+   if(p.team)p.x=Math.max(gx0-175,p.x);else p.x=Math.min(gx0+175,p.x);
+  }
  });
 
  if(S.owner){
@@ -1629,7 +1647,7 @@ function sim(dt){
       if(b.passTo&&p===b.passTo)continue;
       if(dist(p,b)<23){
         b.intT=1;
-        if(Math.random()<clamp((p.def||70)/140,.12,.62)){
+        if(Math.random()<clamp((p.def||70)/140,.12,.62)*(p.team===1?BF:1)){
           b.lastPass=null;b.passTo=null;b.hot=false;b.curl=0;b.cross=false;b.vx=b.vy=0;
           S.owner=p;p.hasBall=true;p.fx.tk++;S.stats.rob[p.team]++;catchTick(p);
           spawnFx(p.x,p.y,'#7ee787',6,120);
@@ -1711,18 +1729,19 @@ function tryHead(p){
 function goalie(b,side){
  const gk=S.players.find(p=>p.idx===GKIDX&&((side==='L'&&p.team===0)||(side==='R'&&p.team===1)));
  const line=side==='L'?FIELD.x:FIELD.x+FIELD.w;
- /* cobertura real: qué tan cerca está del punto donde cruza (zambullida) */
+  /* cobertura real: qué tan cerca está del punto donde cruza (zambullida) */
  const reach=gk?Math.hypot(gk.x-line,gk.y-b.y):1e9;
  const diving=gk&&((gk.diveT||0)>0);                       /* en pleno vuelo tiene más mano */
- if(gk&&reach<(diving?60:46)){
+ const gF=gk&&gk.team===1?(.55+.45*BF):1;                   /* 🧠 alcance del portero rival, sembrado de tu dificultad */
+ if(gk&&reach<((diving?60:46)*gF)){
    gk.y+=(b.y-gk.y)*(.55+(diving?.3:0));                   /* ¡SE TIRA! 🧤 */
    const esTiro=b.lastShooter!==null;                       /* 📊 atajada = había bala, no ceniza */
    /* 🧠 BLOCAR vs DESPEJAR: si la ceniza no es bala y NO hay merodeador del rebote, la ATRAPA;
       si hay bala caliente o tiburón acechando, la revienta con puños FUERA del mundo (hacia la banda) */
-   const bala=Math.abs(b.vx)>(diving?640:500);
+   const bala=Math.abs(b.vx)>(diving?640:500)*gF;
    const merodea=S.players.some(q=>q.team!==gk.team&&q.idx!==GKIDX&&Math.hypot(q.x-line,q.y-b.y)<130)
     ||(b.lastShooter&&b.lastShooter.team!==gk.team&&Math.hypot(b.lastShooter.x-line,b.lastShooter.y-b.y)<150);
-   if(!bala&&!merodea&&Math.abs(b.vx)<(diving?690:560)){S.owner=gk;gk.hasBall=true;b.vx=b.vy=0;b.passTo=null;b.hot=false;b.lastPass=null;if(esTiro){gk.fx.sv++;S.stats.sv[gk.team]++;}SFX.noise(.15,.2,600);if(S.crowd){S.crowd.cheerT=Math.max(S.crowd.cheerT,.9);SFX.ooh();}flashTaunt(gk.n+' la atrapa 🔒 BLOCADO');comment('🧤 '+gk.n+' la abraza sin rebote. ¡BLOCADA!');return;}
+   if(!bala&&!merodea&&Math.abs(b.vx)<(diving?690:560)*gF){S.owner=gk;gk.hasBall=true;b.vx=b.vy=0;b.passTo=null;b.hot=false;b.lastPass=null;if(esTiro){gk.fx.sv++;S.stats.sv[gk.team]++;}SFX.noise(.15,.2,600);if(S.crowd){S.crowd.cheerT=Math.max(S.crowd.cheerT,.9);SFX.ooh();}flashTaunt(gk.n+' la atrapa 🔒 BLOCADO');comment('🧤 '+gk.n+' la abraza sin rebote. ¡BLOCADA!');return;}
    if(esTiro){gk.fx.sv++;S.stats.sv[gk.team]++;}
    const lado=b.y<CTRY?-1:1;                                /* despeje CON CRITERIO: hacia la banda, nunca al medio */
    b.vx=(side==='L'?1:-1)*Math.abs(b.vx)*BOUNCE;b.vy=b.vy*.25+lado*(130+Math.random()*130);
@@ -1959,10 +1978,10 @@ function makeFans(){
  /* bandas de portería: izquierda LOCAL · derecha RIVAL (como en la tele) */
  for(let yy=8;yy<=552;yy+=9){const yj=yy+Math.random()*2-1;
   for(const xx of [6,14,22,30,38])put(xx+Math.random()*2-1,yj,palH,.75+((552-yy)/544)*.25);
-  for(const xx of [962,970,978,986,994])put(xx+Math.random()*2-1,yj,palA,.25+(yy/544)*.25);}
+  for(const xx of [W-38,W-30,W-22,W-14,W-6])put(xx+Math.random()*2-1,yj,palA,.25+(yy/544)*.25);}
  /* bandas largas: mitad de cada color + salpicón neutral */
- for(let xx=50;xx<=950;xx+=9){const xj=xx+Math.random()*2-1;
-  const palTop=Math.random()<.18?palN:(xx<500?palH:palA);
+ for(let xx=50;xx<=W-50;xx+=9){const xj=xx+Math.random()*2-1;
+  const palTop=Math.random()<.18?palN:(xx<W/2?palH:palA);
   const palBot=Math.random()<.18?palN:(xx<500?palH:palA);
   for(const yy of [7,15,23,30])put(xj,yy,palTop,((xx-46)/908)*.25);
   for(const yy of [531,539,547,554])put(xj,yy,palBot,.5+(1-(xx-46)/908)*.25);}
@@ -1973,7 +1992,7 @@ function drawFans(){
  const cheer=Math.min(1,cr.cheerT),boo=cr.booT>0?1:0;
  /* sombra de las gradas tras los carteles */
  cx.fillStyle='rgba(0,0,0,.30)';
- cx.fillRect(0,0,44,H);cx.fillRect(956,0,44,H);cx.fillRect(44,0,912,32);cx.fillRect(44,528,912,32);
+ cx.fillRect(0,0,44,H);cx.fillRect(W-44,0,44,H);cx.fillRect(44,0,W-88,32);cx.fillRect(44,H-32,W-88,32);
  let wp=-1;if(cr.waveT>0)wp=1-cr.waveT/4;                          /* frente de LA OLA 🌊 */
  for(let i=0;i<FANS.length;i++){const f=FANS[i];
   let dy=Math.sin(t*2.2+f.ph)*(.6+cheer*3.4);                      /* salto en el gol */
@@ -1983,7 +2002,7 @@ function drawFans(){
   cx.fillStyle=f.c;cx.fillRect(f.x+dx|0,(f.y+dy)|0,4,5);
  }
  if(boo){cx.fillStyle='rgba(255,40,40,.08)';                        /* rabia contenida */
-  cx.fillRect(0,0,44,H);cx.fillRect(956,0,44,H);cx.fillRect(44,0,912,32);cx.fillRect(44,528,912,32);}
+  cx.fillRect(0,0,44,H);cx.fillRect(W-44,0,44,H);cx.fillRect(44,0,W-88,32);cx.fillRect(44,H-32,W-88,32);}
 }
 /* ── timers del ambiente: el público reacciona y respira ── */
 function crowdTick(dt){
