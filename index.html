@@ -13253,6 +13253,16 @@ const Music = {
         };
         requestAnimationFrame(step);
     },
+    duck() {                                        /* 🏟️ entra la cancha por los túneles */
+        if (this._ducked) return;
+        this._ducked = true;
+        this.fadeTo(0);                             /* 🔉 la música hace FADE OUT hasta el silencio */
+    },
+    restore() {                                     /* 🔊 ¡pitazo final! la música VUELVE a su volumen */
+        if (!this._ducked) return;
+        this._ducked = false;
+        if (this.audio) this.fadeTo(this.muted ? 0 : this.volume);
+    },
     onError() {
         this.offline = true;
         this.ui();
@@ -38488,7 +38498,7 @@ window.FC27Bridge = (function () {
   }
   /* overlay */
   var ov = null;
-  function close() { if (ov && ov.parentNode) ov.parentNode.removeChild(ov); ov = null; }
+  function close() { if (ov && ov.parentNode) ov.parentNode.removeChild(ov); ov = null; try { if (typeof Music !== 'undefined' && Music.restore) Music.restore(); } catch (eR2) {} }   /* 🔊 partido fuera: pitazo o salida */
   /* TODOS los partidos a cancha: tarjeta despacha por tipo · liga=calendario · copa/supercopa=enfrentamiento del evento */
   function launchEvent(ev) {
     if (!ev) ev = { act: 'league' };
@@ -38555,6 +38565,7 @@ window.FC27Bridge = (function () {
     var fr = document.createElement('iframe');
     fr.src = FILE + '?' + q; fr.style.cssText = 'flex:1;border:0;width:100%';
     ov.appendChild(fr); document.body.appendChild(ov);
+    try { if (typeof Music !== 'undefined' && Music.duck) Music.duck(); } catch (eM) {}   /* 🔉 empieza el partido */
   }
   function minesafe(s2){ return String(s2||''); }
   function mcRef(){ return (typeof ManagerCareer!=='undefined' && ManagerCareer) ? ManagerCareer : (window.ManagerCareer||null); } /* 7.9.0 lo declara con let/const: vive SOLO como global léxico, window.ManagerCareer es undefined */
@@ -38629,7 +38640,7 @@ window.FC27Bridge = (function () {
       Cups.simMatch = wc2;
     }
   } catch (eB2) {}
-  return { launch: launch, launchEvent: launchEvent, launchComp: launchComp, _applyPending: _applyPending, pending: null };
+  return { launch: launch, launchEvent: launchEvent, launchComp: launchComp, close: close, _applyPending: _applyPending, pending: null };
 })();
 </script>
 <script>
