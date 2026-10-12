@@ -255,8 +255,9 @@ body.touch #ctrl .kb{display:none}
     <div class="sub" id="bannerSub"></div>
     <div class="stats" id="bannerStats"></div>
     <div class="btnrow" id="bannerBtns" style="display:none">
-      <button class="bbtn2" id="btnRematch">REVANCHA ↻</button>
+      <button class="bbtn2" id="btnRematch">REINICIAR PARTIDO ↻</button>
       <button class="bbtn2 ghost" id="btnTeams">CAMBIAR EQUIPOS</button>
+      <button class="bbtn2 ghost" id="btnExit">SALIR DEL PARTIDO ✕</button>
     </div>
   </div>
   <div id="chargewrap"><div id="charge"></div></div>
@@ -667,7 +668,7 @@ function picksToXi(picks){
  return xi.map(c=>c!==null?c:rest.shift());
 }
 function resetClock(){
- S.tLeft=S.matchT;S.overtime=false;S.addT=[0,0];          /* tiempo agregado empieza en cero */
+ S.tLeft=S.matchT;S.overtime=false;S.addT=[0,0];S._pT=null;          /* tiempo agregado empieza en cero */
  S.cards={};S.outR=new Set();                            /* amarillas/expulsos se resetean cada partido */
  S.crowd={cheerT:0,booT:0,waveT:0,waveCd:24,chantCd:12}; /* la grada arranca fresca */
  S.staH={};                                             /* energía por jugador (roster) */
@@ -694,7 +695,7 @@ function closeHt(){
  S.players.forEach(q=>{q.sta=Math.min(100,(q.sta==null?100:q.sta)+22);
   if(q.sta>20)q.gassed=false;
   if(q.team===0&&q.idx!==GKIDX&&q.cr!=null&&S.staH)S.staH[q.cr]=q.sta;});
- cut(()=>{newKickoff(1);S.st='play';},6);              /* ✨ 2ª parte: el cambio de campo se tapa */
+ cut(()=>{newKickoff(1);S._pT=null;S.st='play';},6);              /* ✨ 2ª parte: el cambio de campo se tapa */
  flashTaunt('¡Vuelve la 2ª parte! ▶');
  SFX.whistle(1);
 }
@@ -1532,9 +1533,13 @@ function sim(dt){
  const o=document.getElementById('clock');
  /* 45'+X' → ENTRETIEMPO 🍊 (respeta el tiempo AGREGADO de la 1ª parte) */
  const htLine=S.matchT/2-(S.addT?S.addT[0]:0);
- if(!S.htDone&&S.st==='play'&&S.tLeft<=htLine&&S.tLeft>htLine-1.7){openHt();}
  /* 90'+X' → PITAZO FINAL 🏁 (sin gol de oro: se acabó el juego) */
  const finLine=-(S.addT?S.addT[1]:0);
+ /* 🍊 ENTRETIEMPO por CRUCE: un tirón de frame ya no se salta el 45' (ventana 1.7s eliminada)
+    y tLeft>finLine blinda que JAMÁS abra junto al pitazo final. */
+ const crossedHt=(S._pT!=null&&S._pT>htLine&&S.tLeft<=htLine);
+ if(!S.htDone&&S.st==='play'&&crossedHt&&S.tLeft>finLine){openHt();}
+ S._pT=S.tLeft;
  if(S.tLeft<=finLine){S.tLeft=0;endMatch();}
  else{
   const el=S.matchT-S.tLeft,half=S.matchT/2;
@@ -1930,7 +1935,7 @@ function endReplay(){
 }
 function resumeAfterGoal(){
  hideBanner();
- if(S.tLeft<=4){endMatch();return;}
+ if(S.tLeft<=4-(S.addT?S.addT[1]:0)){endMatch();return;}   /* no regala la prórroga del agregado */
  S.st='play';newKickoff(S.kickSide);
  S.rp=null;
 }
@@ -1956,9 +1961,9 @@ function gol(team,scorer){
  setTimeout(()=>{if(S.st==='goal'||S.st==='play')SFX.chant();},6200);   /* tras el rugido… ¡OLÉ OLÉ! */
  flashTaunt(pick(TAUNTS.gol));
  setTimeout(()=>{
-  if(S.st!=='goal')return;      /* por si pausaron justo ahí */
+ if(S.st!=='goal')return;      /* por si pausaron justo ahí */
   hideBanner();
-  if(S.tLeft<=4){endMatch();return;}
+ if(S.tLeft<=4-(S.addT?S.addT[1]:0)){endMatch();return;}   /* no regala la prórroga del agregado */
   S.kickSide=team?0:1;
   startReplay();                /* 📺 ¡VA LA REPETICIÓN! (si no hay grabación, pasa directo) */
  },1750);
@@ -1969,7 +1974,10 @@ function ftRow(label,va,vb,pctH){                       /* 📊 fila FIFA: valor
   +'<b style="width:44px;text-align:left">'+vb+'</b><span style="width:64px;font-size:.62rem">'+label+'</span></div>';
 }
 function endMatch(){
- S.st='over';SFX.whistle(3);
+ if(S.st==='over')return;                                   /* 🧲 UN pitazo final, UN solo acta */
+ S.st='over';S.htDone=true;SFX.whistle(3);                 /* tras el final, el entretiempo queda proscrito */
+ const _htp=document.getElementById('ht');if(_htp)_htp.classList.remove('on');
+ const _htb=document.getElementById('htBody');if(_htb)_htb.classList.remove('on');
  const w=S.scores[0]>S.scores[1],d=S.scores[0]===S.scores[1];
  const pos=S.stats.pos,tot=pos[0]+pos[1]||1,pcH=Math.round(pos[0]/tot*100);
  const pctRow=(a,b)=>{const t=a+b||1;return Math.round(a/t*100);};
@@ -2019,6 +2027,11 @@ function endMatch(){
  if(window.__career){try{parent.postMessage({type:(window.__career.bus==='ut'?'FC27_RESULT_UT':(window.__career.bus==='torneos'?'FC27_RESULT_TOUR':'FC27_RESULT')),gh:S.scores[0],ga:S.scores[1],clubH:S.clubH.n,clubA:S.clubA.n},'*');}catch(e){}}   /* 📨 la liga recoge el acta */
 }
 document.getElementById('btnRematch').onclick=()=>{SFX.ui();newMatch(S.xiH);SFX.whistle(1);};
+document.getElementById('btnExit').onclick=()=>{
+ SFX.ui();hideBanner();
+ if(window.__career){try{parent.postMessage({type:(window.__career.bus==='ut'?'FC27_RESULT_UT':(window.__career.bus==='torneos'?'FC27_RESULT_TOUR':'FC27_RESULT')),gh:S.scores[0],ga:S.scores[1],clubH:S.clubH.n,clubA:S.clubA.n},'*');}catch(e){}}   /* re-post idempotente: el padre cierra el overlay */
+ else{S.st='menu';document.getElementById('menu').classList.add('on');step(1);}   /* amistoso: vuelves al club */
+};
 document.getElementById('btnTeams').onclick=()=>{
  SFX.ui();hideBanner();S.st='menu';
  document.getElementById('menu').classList.add('on');
