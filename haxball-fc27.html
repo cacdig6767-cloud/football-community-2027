@@ -785,6 +785,7 @@ function newMatch(xiPicks){
  paintDot('dotH',S.clubH);
  paintDot('dotA',S.clubA);
  applyComp();                                                 /* 🏆 el torneo firma el marcador */
+ if(S.clubA&&S.clubA.away)comment('🎽 '+S.clubA.n+' sale con su uniforme ALTERNATIVO (choque de colores)');
  /* 📺 MARCADOR DE TELE: las píldoras se pintan del club de cada uno */
  tn.style.background='linear-gradient(90deg,'+S.clubH.c1+','+S.clubH.c2+')';tn.style.color=S.clubH.tx||'#fff';
  ta.style.background='linear-gradient(90deg,'+S.clubA.c2+','+S.clubA.c1+')';ta.style.color=S.clubA.tx||'#fff';
@@ -2015,7 +2016,7 @@ function endMatch(){
  document.getElementById('bannerSub').textContent=w?'Tu XI lo dio todo. El club te aplaude de pie.':(d?'Nadie se rindió. A la revancha.':'Duelo aprendido. A trabajar.');
  const bb=document.getElementById('bannerBtns');bb.style.display='flex';
  document.getElementById('banner').style.pointerEvents='auto';
- if(window.__career){try{parent.postMessage({type:(window.__career.bus==='ut'?'FC27_RESULT_UT':'FC27_RESULT'),gh:S.scores[0],ga:S.scores[1],clubH:S.clubH.n,clubA:S.clubA.n},'*');}catch(e){}}   /* 📨 la liga recoge el acta */
+ if(window.__career){try{parent.postMessage({type:(window.__career.bus==='ut'?'FC27_RESULT_UT':(window.__career.bus==='torneos'?'FC27_RESULT_TOUR':'FC27_RESULT')),gh:S.scores[0],ga:S.scores[1],clubH:S.clubH.n,clubA:S.clubA.n},'*');}catch(e){}}   /* 📨 la liga recoge el acta */
 }
 document.getElementById('btnRematch').onclick=()=>{SFX.ui();newMatch(S.xiH);SFX.whistle(1);};
 document.getElementById('btnTeams').onclick=()=>{
@@ -2444,6 +2445,24 @@ function parseCareerURL(s){
  if(ia<0||ib<0||ia===ib)return null;
  return {club:ia,rival:ib,bus:String(q.get('bus')||'').slice(0,8)};   /* 🚌 bus=ut → el acta se etiqueta como FC27_RESULT_UT */
 }
+/* 🎽 CHOQUE DE UNIFORMES: si el visitante trae MI color, sale con su ALTERNATIVA
+   (como el fútbol de verdad: si la casa choca, el que viaja cambia). */
+function awayKit(h,a){
+ if(!h||!a)return a;
+ const R=c=>{const m=/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(c||'');return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:null;};
+ const H=R(h.c1),A=R(a.c1);if(!H||!A)return a;
+ const D=(x,y)=>Math.sqrt((x[0]-y[0])*(x[0]-y[0])+(x[1]-y[1])*(x[1]-y[1])+(x[2]-y[2])*(x[2]-y[2]));
+ if(D(H,A)>=100)return a;                                              /* sin choque: preserva sus colores */
+ const out={n:a.n,c1:a.c2,c2:a.c1,tx:a.tx||'#ffffff',away:true};
+ const A2=R(out.c1);
+ if(A2&&D(H,A2)>=100)return out;                                       /* 1ª vía: invierte su propia camiseta */
+ const W=[244,244,244],K=[22,22,32];                                   /* 2ª vía: uniforme NEUTRO (blanco o negro) */
+ const blanco=D(H,W)>=100,negro=D(H,K)>=100;
+ out.c1=blanco?'#f4f4f4':(negro?'#16161e':'#f4f4f4');
+ out.c2=a.c2||'#f5c451';
+ out.tx=(out.c1==='#f4f4f4')?'#16161e':'#f4f4f4';
+ return out;
+}
 function careerXI(mx){const n=Math.min(mx||11,ROSTER.length),out=[];for(let i=0;i<n;i++)out.push(i);return out;}
 function careerBoot(){
  const car=parseCareerURL(location.search);
@@ -2453,7 +2472,7 @@ function careerBoot(){
  S.__awayRoster=(away&&away.xi&&away.xi.length>=10)?away.xi:null;
  if(away&&away.gk)GKS[1]=away.gk;                /* 🧤 el portero visitante también viste su camiseta */
  selForm=S.formH||selForm;
- S.clubH=CLUBS[car.club];S.clubA=CLUBS[car.rival];
+ S.clubH=CLUBS[car.club];S.clubA=awayKit(S.clubH,CLUBS[car.rival]);   /* 🎽 el visitante mide el choque de uniformes */
  document.getElementById('menu').classList.remove('on');
  newMatch(careerXI(11));                             /* XI automática: las 11 primeras fichas de TU plantel */
  return car;

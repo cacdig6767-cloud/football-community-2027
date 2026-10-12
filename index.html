@@ -1803,6 +1803,7 @@ input[type="range"]{accent-color:#00ff87}
             <button class="fc-btn fc-btn-wide" style="border-color:rgba(255,214,0,.6);background:linear-gradient(100deg,rgba(255,214,0,.16),rgba(0,229,118,.08));box-shadow:0 0 24px rgba(255,214,0,.14)" onclick="Game.showScreen('screen-player-career')">⚽🐐 Carrera Jugador<small>¡NUEVO en 2.0! Vive los momentos como futbolista — al retirarte pasas al banquillo</small></button>
             <button class="fc-btn fc-btn-wide" onclick="SaveUI.openLoad()">📋 Carrera Manager<small>Continúa tu partida, crea una nueva o importa un archivo</small></button>
             <button class="fc-btn fc-btn-wide" style="border-color:rgba(192,132,252,.6);background:linear-gradient(100deg,rgba(192,132,252,.16),rgba(245,196,81,.08));box-shadow:0 0 24px rgba(192,132,252,.14)" onclick="window.open('ultimate-team.html','_blank')">🃏 ULTIMATE TEAM<small>¡NUEVO MODO! Sobres, colección, gym sin techo y partidos vivos — hasta dificultad 🛸 Galáctica</small></button>
+            <button class="fc-btn fc-btn-wide" style="border-color:rgba(245,196,81,.6);background:linear-gradient(100deg,rgba(245,196,81,.17),rgba(46,204,113,.08));box-shadow:0 0 24px rgba(245,196,81,.14)" onclick="TorneosUI.open()">🏆 TORNEOS<small>¡NUEVO MODO! Champions, Libertadores, Copa Global, Centroamérica… y tu torneo personalizado sandbox</small></button>
             <button class="fc-btn" onclick="RosterEditor.open()">✏️ Editor<small>Plantillas · crea cracks · exporta/importa</small></button>
             <button class="fc-btn" onclick="Game.showScreen('screen-settings')">⚙️ Ajustes<small>Música, IA y opciones</small></button>
             <button class="fc-btn" onclick="Game.showScreen('screen-info')">ℹ️ Info<small>Antes de jugar · Términos</small></button>
@@ -2603,6 +2604,7 @@ input[type="range"]{accent-color:#00ff87}
 </div>
 
 <script src="nat-db.js"></script>
+<script src="torneos.js"></script>
 <script src="ps-icons.js"></script>
 <script>
  /* v7.0.2: bandera SVG para ligas/objetos-liga — cero emojis en TODA la UI */
@@ -38678,5 +38680,477 @@ window.FC27Bridge = (function () {
 })();
 </script>
 
+<script>
+/* ================= FC27 · v4.0 MODO TORNEOS — UI (se inyecta inline en index.html) =================
+   Hub de torneos prehechos + Creador personalizado (sandbox) + vista en vivo con stats.
+   Jugar = la cancha haxball-fc27.html vía ?career=1&bus=torneos (acta FC27_RESULT_TOUR). */
+window.TorneosUI = (function(){
+'use strict';
+var T = null, view = 'hub', tab = 'match', root = null, ov = null;
+var B = { ids: {}, q: '', kind: 'all' };
+var DIFFS = [['0','🎓 Amateur'],['1','⚽ Profesional'],['2','🔥 Leyenda'],['3','🛸 Galáctica']];
+
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function el(id){ return document.getElementById(id); }
+function css(){
+  if (el('trn-css')) return;
+  var st = document.createElement('style'); st.id = 'trn-css';
+  st.textContent = [
+    '#torneos-root{position:fixed;inset:0;z-index:99990;background:radial-gradient(1200px 700px at 70% -10%,#182240,#070a12 60%);overflow-y:auto;color:#eef2ff;font-family:system-ui,-apple-system,sans-serif}',
+    '.trn-wrap{max-width:1060px;margin:0 auto;padding:22px 14px 60px}',
+    '.trn-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}',
+    '.trn-top h1{font-size:26px;margin:0;letter-spacing:.5px}',
+    '.trn-top .sub{color:#9fb0d8;font-size:12.5px}',
+    '.trn-x{margin-left:auto;background:#1b2238;border:1px solid #2c3a63;color:#cfd8ff;border-radius:9px;padding:8px 13px;font-weight:800;cursor:pointer}',
+    '.trn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}',
+    '.trn-card{background:linear-gradient(180deg,#131a30,#0e1322);border:1px solid #22305c;border-radius:14px;padding:14px}',
+    '.trn-card h3{margin:0 0 6px;font-size:16.5px}',
+    '.trn-card p{margin:0 0 10px;color:#9fb0d8;font-size:12.5px;line-height:1.5}',
+    '.trn-btn{background:linear-gradient(100deg,#f5c451,#e79b2d);border:none;color:#1a1206;font-weight:900;border-radius:10px;padding:9px 14px;cursor:pointer;font-size:13px}',
+    '.trn-btn.alt{background:#1d2642;color:#e8eeff;border:1px solid #31437a}',
+    '.trn-btn.ghost{background:transparent;color:#9fb0d8;border:1px solid #2c3a63}',
+    '.trn-btn.sim{background:#14324a;color:#bfe3ff;border:1px solid #1f547a}',
+    '.trn-btn:disabled{opacity:.45;cursor:not-allowed}',
+    '.trn-inp,.trn-sel{background:#0e1526;border:1px solid #2a3a66;color:#eef2ff;border-radius:9px;padding:9px 10px;font-size:13.5px;width:100%;box-sizing:border-box}',
+    '.trn-lbl{font-size:11.5px;color:#9fb0d8;text-transform:uppercase;letter-spacing:.8px;margin:0 0 5px}',
+    '.trn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}',
+    '.trn-row>div{flex:1;min-width:150px}',
+    '.trn-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}',
+    '.trn-chip{background:#16203c;border:1px solid #2c3f78;border-radius:20px;padding:5px 10px;font-size:12px;display:flex;gap:7px;align-items:center;cursor:pointer}',
+    '.trn-chip b{color:#ff9b9b}',
+    '.trn-pool{max-height:300px;overflow-y:auto;border:1px solid #22305c;border-radius:10px;margin-top:8px}',
+    '.trn-tm{display:flex;align-items:center;gap:9px;padding:7px 10px;border-bottom:1px solid #161f38;cursor:pointer;font-size:13.5px}',
+    '.trn-tm:hover{background:#141c33}',
+    '.trn-tm.on{background:#17264a;border-left:3px solid #f5c451}',
+    '.trn-dot{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 3px #0009}',
+    '.trn-crest{width:20px;height:20px;object-fit:contain;vertical-align:-5px;margin-right:6px;flex:none;filter:drop-shadow(0 0 2px #0007)}',
+    '.trn-rt{margin-left:auto;color:#8fa2cf;font-size:11.5px}',
+    '.trn-table{width:100%;border-collapse:collapse;font-size:12.8px}',
+    '.trn-table th{color:#8fa2cf;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;padding:5px 6px;text-align:right}',
+    '.trn-table td{padding:5px 6px;border-top:1px solid #1a2440;text-align:right}',
+    '.trn-table td:first-child,.trn-table th:first-child{text-align:left}',
+    '.trn-zoneA td:first-child{border-left:3px solid #2ecc71}',
+    '.trn-zone3 td:first-child{border-left:3px solid #56b6ff}',
+    '.trn-mtabs{display:flex;gap:8px;margin:14px 0 10px;flex-wrap:wrap}',
+    '.trn-mtabs button{background:#131a30;color:#cfd8ff;border:1px solid #22305c;border-radius:20px;padding:8px 16px;font-weight:800;cursor:pointer;font-size:12.5px}',
+    '.trn-mtabs button.on{background:#f5c451;color:#1a1206;border-color:#f5c451}',
+    '.trn-ktab{background:#131a30;color:#cfd8ff;border:1px solid #22305c;border-radius:20px;padding:10px 15px;font-weight:800;cursor:pointer;font-size:12.5px}',
+    '.trn-ktab.on{background:#f5c451;color:#1a1206;border-color:#f5c451}',
+    '.trn-day{font-size:11px;color:#8fa2cf;text-transform:uppercase;letter-spacing:1px;margin:16px 0 7px}',
+    '.trn-m{display:flex;align-items:center;gap:8px;background:#101830;border:1px solid #1e2c52;border-radius:10px;padding:8px 10px;margin-bottom:6px;font-size:13.5px;flex-wrap:wrap}',
+    '.trn-m.mine{border-color:#f5c451aa;box-shadow:0 0 12px #f5c45122}',
+    '.trn-m .sc{font-weight:900;min-width:52px;text-align:center;font-size:15px}',
+    '',
+    '.trn-m .nm{flex:1;min-width:110px}',
+    '.trn-m .nm.r{text-align:right}',
+    '.trn-m .res{color:#9fb0d8;font-size:11.5px;width:100%;margin-top:2px}',
+    '.trn-flag{vertical-align:-2px;margin-right:4px}',
+    '.trn-banner{background:linear-gradient(100deg,#3b2a05,#1a1206);border:1px solid #f5c45177;border-radius:14px;padding:16px;text-align:center;margin-bottom:14px}',
+    '.trn-banner b{font-size:21px;color:#f5c451}',
+    '.trn-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}',
+    '.trn-log{font-size:12px;color:#9fb0d8;line-height:1.7;background:#0c1120;border:1px solid #1a2440;border-radius:10px;padding:10px 12px;max-height:150px;overflow-y:auto}',
+    '.trn-pen{color:#ffce6b;font-size:11.5px}'
+  ].join('\n');
+  document.head.appendChild(st);
+}
+function open(){
+  css();
+  if (!root){
+    root = document.createElement('div'); root.id = 'torneos-root';
+    document.body.appendChild(root);
+  }
+  if (!T){ try { T = TOURNEOS.loadLast(); if (T) view = 'play'; } catch (e) {} }
+  render();
+}
+function close(){ if (root && root.parentNode) root.parentNode.removeChild(root); root = null; }
+function flag(code, w){
+  try { if (window.IntlCup && IntlCup.flagSVG) return '<span class="trn-flag">' + IntlCup.flagSVG(code, w || 22, 14) + '</span>'; } catch (e) {}
+  return '';
+}
+function crestHtml(name){
+  try {
+    var u = (typeof CRESTS !== 'undefined' && CRESTS[name]) ? CRESTS[name] : null;
+    if (u) return '<img loading="lazy" class="trn-crest" src="' + u + '" alt="">';
+  } catch (e) {}
+  return '';
+}
+function badge(id){
+  var t = TOURNEOS.teamById(id); if (!t) return '<span>?</span>';
+  if (t.kind === 'club'){ var cg = crestHtml(t.name); if (cg) return cg + esc(t.name); }
+  var c = TOURNEOS.teamColors(t);
+  return '<span class="trn-dot" style="background:' + c[0] + ';border:1px solid ' + c[1] + '"></span>' +
+         (t.kind === 'sel' ? flag(t.code) : '') + esc(t.name);
+}
+
+/* ─────────── HUB ─────────── */
+function renderHub(){
+  var ps = [];
+  try { ps = TOURNEOS.PRESETS(); } catch (e) {}
+  var last = null; try { last = TOURNEOS.loadLast(); } catch (e2) {}
+  var h = '<div class="trn-wrap"><div class="trn-top"><h1>🏆 TORNEOS</h1><span class="sub">Copas prehechas en serio y tu torneo personalizado desde cero</span>' +
+          '<button class="trn-x" onclick="TorneosUI.close()">✕ cerrar</button></div>';
+  if (last){
+    var lcName = last.champion ? ' · 🏅 ' + esc((TOURNEOS.teamById(last.champion) || {}).name || '') : '';
+    h += '<div class="trn-card" style="margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">' +
+         '<b style="font-size:17px">' + esc(last.cfg.icon) + ' ' + esc(last.cfg.name) + '</b>' +
+         '<span class="sub">' + (last.phase === 'done' ? 'terminado' + lcName : 'en curso · fase ' + esc(last.phase)) + '</span>' +
+         '<button class="trn-btn" style="margin-left:auto" onclick="TorneosUI.continueLast()">▶ CARGAR EL ÚLTIMO TORNEO</button>' +
+         '<button class="trn-btn ghost" onclick="TorneosUI.deleteSave()">🗑️</button></div>';
+  }
+  h += '<p class="trn-lbl">Torneos prehechos</p><div class="trn-grid">';
+  ps.forEach(function(p, i){
+    h += '<div class="trn-card"><h3>' + esc(p.icon) + ' ' + esc(p.name) + '</h3><p>' + esc(p.desc) + '</p>' +
+         '<button class="trn-btn" onclick="TorneosUI.startPreset(' + i + ')">🏁 EMPEZAR</button></div>';
+  });
+  h += '</div><p class="trn-lbl" style="margin-top:18px">Tu laboratorio</p><div class="trn-grid">' +
+       '<div class="trn-card" style="border-color:#f5c45155"><h3>🛠️ TORNEO PERSONALIZADO</h3>' +
+       '<p>Sandbox total: liga / copa / grupos+eliminatorias, mezcla clubes y selecciones, ida y vuelta, gol de visita, prórroga, penales, mejores terceros, byes… desde 4 equipos hasta el Mundial masivo con TODO el juego.</p>' +
+       '<button class="trn-btn" onclick="TorneosUI.newBuilder()">⚙️ CREAR MI TORNEO</button></div></div></div>';
+  root.innerHTML = h;
+}
+
+/* ─────────── BUILDER ─────────── */
+function newBuilder(prefill){
+  B = { ids: {}, q: '', kind: 'all' };
+  if (prefill) prefill.teamIds.forEach(function(id){ B.ids[id] = 1; });
+  B.cfg = prefill ? JSON.parse(JSON.stringify(prefill)) : {
+    name: 'Mi Torneo', icon: '🏆', format: 'mixto', twoLegLiga: false,
+    twoLegKo: true, awayGoals: false, extraTime: true, pens: true, neutral: false,
+    groups: { n: 4, advance: 2, best3: 0 }, diff: '1', userTeam: ''
+  };
+  view = 'builder'; render();
+}
+function cnt(){ return Object.keys(B.ids).length; }
+function teamRow(t){
+  var on = B.ids[t.id] ? 1 : 0, c = TOURNEOS.teamColors(t);
+  var icn = (t.kind === 'club' && crestHtml(t.name)) ? crestHtml(t.name)
+        : '<span class="trn-dot" style="background:' + c[0] + ';border:1px solid ' + c[1] + '"></span>';
+  return '<div class="trn-tm' + (on ? ' on' : '') + '" onclick="TorneosUI.toggle(\'' + t.id.replace(/'/g, "\\'") + '\')" data-id="' + esc(t.id) + '">' +
+         icn + (t.kind === 'sel' ? flag(t.code) : '') + '<span>' + esc(t.name) + '</span>' +
+         '<span class="trn-rt">' + (t.kind === 'sel' ? 'selección' : esc(t.lgName || 'club')) + ' · ' + t.r + '</span></div>';
+}
+function renderBuilder(){
+  var d = TOURNEOS.db(), n = cnt(), cfg = B.cfg;
+  var nG = Math.min(Math.max(2, cfg.groups.n | 0), Math.max(2, Math.floor(n / 2) || 2));
+  if (n >= 4) cfg.groups.n = nG;
+  var adv = cfg.groups.advance | 0, b3 = cfg.groups.best3 | 0;
+  var perG = nG ? Math.ceil(n / nG) : 0;
+  var classified = nG * Math.max(1, adv) + (b3 | 0);
+  var pow2 = 2; while (pow2 < classified) pow2 *= 2;
+  var h = '<div class="trn-wrap"><div class="trn-top"><h1>🛠️ CREADOR DE TORNEOS</h1>' +
+          '<button class="trn-x" onclick="TorneosUI.viewHub()">← hub</button></div>';
+  h += '<div class="trn-row"><div><p class="trn-lbl">Nombre</p><input class="trn-inp" id="trn-name" value="' + esc(cfg.name) + '" maxlength="40" onchange="TorneosUI.cfgSet(\'name\',this.value)"></div>' +
+       '<div><p class="trn-lbl">Icono</p><input class="trn-inp" id="trn-icon" value="' + esc(cfg.icon) + '" maxlength="4" onchange="TorneosUI.cfgSet(\'icon\',this.value)"></div>' +
+       '<div><p class="trn-lbl">Formato</p><select class="trn-sel" onchange="TorneosUI.cfgSet(\'format\',this.value)">' +
+       [['mixto','🏟️ Mixto: grupos + eliminatorias'],['liga','📋 Liga (tabla de posiciones)'],['copa','⚔️ Copa (eliminatoria directa)']].map(function(o){ return '<option value="' + o[0] + '"' + (cfg.format === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+       '<div><p class="trn-lbl">Dificultad bots</p><select class="trn-sel" onchange="TorneosUI.cfgSet(\'diff\',this.value)">' +
+       DIFFS.map(function(o){ return '<option value="' + o[0] + '"' + (cfg.diff === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div></div>';
+
+  h += '<p class="trn-lbl">Equipos: ' + n + ' seleccionados' + (n < 4 ? ' <b style="color:#ff9b9b">(mínimo 4)</b>' : '') + '</p>';
+  h += '<div class="trn-row"><div style="flex:2;min-width:220px"><input class="trn-inp" placeholder="🔍 buscar club o país…" value="' + esc(B.q) + '" oninput="TorneosUI.search(this.value)"></div>' +
+       '<div style="flex:none;display:flex;gap:6px">' +
+       [['all','👥 Todos'],['club','🏟️ Clubes'],['sel','🌍 Selecciones']].map(function(o){ return '<button type="button" class="trn-ktab' + (B.kind === o[0] ? ' on' : '') + '" onclick="TorneosUI.kind(\'' + o[0] + '\')">' + o[1] + '</button>'; }).join('') + '</div>' +
+       '<div style="flex:none;display:flex;gap:6px"><button class="trn-btn alt" onclick="TorneosUI.pickRandom(8)">🎲 +8 random</button><button class="trn-btn ghost" onclick="TorneosUI.clearIds()">limpiar</button></div></div>';
+  if (n){
+    h += '<div class="trn-chips">';
+    Object.keys(B.ids).slice(0, 80).forEach(function(id){ var t = TOURNEOS.teamById(id); if (t) h += '<span class="trn-chip" onclick="TorneosUI.toggle(\'' + id.replace(/'/g, "\\'") + '\')">' + (t.kind === 'sel' ? flag(t.code, 18) : '') + esc(t.name) + ' <b>✕</b></span>'; });
+    if (n > 80) h += '<span class="trn-chip">+' + (n - 80) + ' más…</span>';
+    h += '</div>';
+  }
+  var list = (B.kind === 'all' ? d.clubs.concat(d.sels) : (B.kind === 'club' ? d.clubs : d.sels));
+  if (B.q) { var q = B.q.toLowerCase(); list = list.filter(function(t){ return t.name.toLowerCase().indexOf(q) >= 0; }); }
+  h += '<div class="trn-pool">' + list.slice(0, 260).map(teamRow).join('') + '</div>';
+  if (list.length > 260) h += '<p class="sub" style="color:#8fa2cf">…y ' + (list.length - 260) + ' más (usa el buscador)</p>';
+
+  h += '<div class="trn-card" style="margin-top:14px"><p class="trn-lbl">Reglas del torneo</p><div class="trn-row">';
+  function opt(id, label, val){ return '<div style="flex:none;min-width:120px"><p class="trn-lbl">' + label + '</p><div style="padding-top:5px"><label style="font-size:13px;cursor:pointer"><input type="checkbox" ' + (val ? 'checked' : '') + ' onchange="TorneosUI.cfgSet(\'' + id + '\',this.checked)"> sí</label></div></div>'; }
+  if (cfg.format === 'liga'){
+    h += opt('twoLegLiga', 'Ida y vuelta', cfg.twoLegLiga);
+  } else {
+    if (cfg.format === 'mixto'){
+      h += '<div style="flex:none;min-width:110px"><p class="trn-lbl">N° de grupos (2+)</p><input class="trn-inp" type="number" min="2" max="' + Math.max(2, Math.floor(n / 2) || 2) + '" value="' + nG + '" onchange="TorneosUI.grpSet(\'n\',this.value)"></div>';
+      h += '<div style="flex:none;min-width:110px"><p class="trn-lbl">Avanzan por grupo</p><input class="trn-inp" type="number" min="1" max="' + Math.max(1, perG - 1) + '" value="' + Math.max(1, Math.min(adv, Math.max(1, perG - 1))) + '" onchange="TorneosUI.grpSet(\'advance\',this.value)"></div>';
+      h += '<div style="flex:none;min-width:120px"><p class="trn-lbl">Mejores 3eros</p><input class="trn-inp" type="number" min="0" max="' + nG + '" value="' + b3 + '" onchange="TorneosUI.grpSet(\'best3\',this.value)"></div>';
+      h += opt('grpTwoLegs', 'Grupos ida/vuelta', !!cfg.groups.twoLegs);
+    }
+    h += opt('twoLegKo', 'KO ida y vuelta', cfg.twoLegKo);
+    if (cfg.twoLegKo) h += opt('awayGoals', 'Gol de visita', cfg.awayGoals);
+    h += opt('extraTime', 'Prórroga', cfg.extraTime);
+    h += opt('pens', 'Penales', cfg.pens);
+    h += opt('neutral', 'KO sede neutral', cfg.neutral);
+  }
+  h += '</div>';
+  if (cfg.format === 'mixto' && n >= 4){
+    h += '<p class="sub" style="color:#9fb0d8;margin:2px 0 0">📐 ' + nG + ' grupos de ~' + perG + ' · avanzan ' + Math.max(1, Math.min(adv, Math.max(1, perG - 1))) +
+         (b3 ? ' + ' + b3 + ' mejores terceros' : '') + ' → <b>' + (TOURNEOS.KO_NAMES[pow2] || ('llave de ' + pow2)) + '</b>' +
+         (pow2 > classified ? ' (' + (pow2 - classified) + ' byes para los mejores)' : '') + '</p>';
+  } else if (cfg.format === 'copa' && n >= 4){
+    var p2 = 2; while (p2 < n) p2 *= 2;
+    h += '<p class="sub" style="color:#9fb0d8;margin:2px 0 0">⚔️ ' + n + ' equipos → ' + (TOURNEOS.KO_NAMES[p2] || ('llave de ' + p2)) + (p2 > n ? ' (' + (p2 - n) + ' byes)' : '') + '</p>';
+  }
+  if (n){
+    h += '<div class="trn-row" style="margin-top:10px"><div><p class="trn-lbl">Tu equipo (el que controlas)</p><select class="trn-sel" onchange="TorneosUI.cfgSet(\'userTeam\',this.value)">' +
+         '<option value="">🎲 dirijo cualquiera (modo comodín)</option>' +
+         Object.keys(B.ids).map(function(id){ var t = TOURNEOS.teamById(id); return '<option value="' + id + '"' + (cfg.userTeam === id ? ' selected' : '') + '>' + esc(t ? t.name : id) + '</option>'; }).join('') + '</select></div></div>';
+  }
+  var ready = n >= 4 && (cfg.format !== 'mixto' || (classified >= 2 && nG >= 2 && Math.min(adv, perG - 1) >= 1));
+  h += '<button class="trn-btn" ' + (ready ? '' : 'disabled') + ' style="font-size:15px;padding:12px 22px" onclick="TorneosUI.create()">🏁 CREAR TORNEO (' + n + ' equipos)</button></div></div>';
+  root.innerHTML = h;
+}
+function cfgSet(k, v){ B.cfg[k] = v; if (k === 'format') render(); }
+function grpSet(k, v){ B.cfg.groups[k] = Math.max(0, v | 0); renderBuilder(); }
+
+/* ─────────── VISTA EN VIVO ─────────── */
+function continueLast(){ T = TOURNEOS.loadLast(); view = T ? 'play' : 'hub'; render(); }
+function startPreset(i){
+  var ps = TOURNEOS.PRESETS(); if (!ps[i]) return;
+  newBuilder(ps[i].cfg);
+}
+function create(){
+  var cfg = B.cfg, ids = Object.keys(B.ids);
+  if (ids.length < 4) return;
+  var g = null;
+  if (cfg.format === 'mixto'){
+    var nG = Math.max(2, Math.min(cfg.groups.n | 0, Math.floor(ids.length / 2)));
+    var perG = Math.ceil(ids.length / nG);
+    g = { n: nG, advance: Math.max(1, Math.min(cfg.groups.advance | 0, perG - 1)), best3: Math.max(0, Math.min(cfg.groups.best3 | 0, nG)), twoLegs: !!cfg.groups.twoLegs };
+    if (nG * g.advance + g.best3 < 2) g.advance = 1;
+  }
+  var nt = TOURNEOS.makeTournament({
+    name: cfg.name || 'Mi Torneo', icon: cfg.icon || '🏆', format: cfg.format, teamIds: ids,
+    twoLegLiga: !!cfg.twoLegLiga, twoLegKo: cfg.format === 'liga' ? false : !!cfg.twoLegKo,
+    awayGoals: !!cfg.awayGoals && !!cfg.twoLegKo, extraTime: cfg.extraTime !== false, pens: cfg.pens !== false,
+    neutral: !!cfg.neutral, groups: g, userTeam: cfg.userTeam || null
+  });
+  if (!nt) return;
+  T = nt; T.cfg.diff = cfg.diff; TOURNEOS.save(T); view = 'play'; tab = 'match'; render();
+}
+function phaseLabel(){
+  if (!T) return '';
+  if (T.phase === 'done') return '🏅 terminado';
+  return { liga: '📋 fase de liga', grupos: '🏟️ fase de grupos', ko: '⚔️ eliminatorias' }[T.phase] || T.phase;
+}
+function matchCard(home, away, mid, extra){
+  var mine = T.cfg.userTeam && (home === T.cfg.userTeam || away === T.cfg.userTeam);
+  var f = TOURNEOS.findMatch(T, mid), played = null, canPlay = true;
+  if (f && f.m) played = f.m.played ? f.m : null;
+  if (f && f.tie){ var tie = f.tie; if (tie.winner) { canPlay = false; } else if (tie.l1 && tie.l1.played && (!tie.l2 || !tie.l2.played)) { /* vuelta pendiente */ } }
+  var h = '<div class="trn-m' + (mine ? ' mine' : '') + '">' +
+          '<span class="nm r">' + badge(home) + '</span>';
+  if (played) h += '<span class="sc">' + played.gh + ' - ' + played.ga + '</span>';
+  else h += '<span class="sc">vs</span>';
+  h += '<span class="nm">' + badge(away) + '</span>';
+  if (extra) h += '<span style="color:#8fa2cf;font-size:11px">' + extra + '</span>';
+  if (canPlay)
+    h += '<span style="margin-left:auto;display:flex;gap:6px">' +
+         '<button class="trn-btn" onclick="TorneosUI.play(\'' + mid + '\')">🎮 Jugar</button>' +
+         '<button class="trn-btn sim" onclick="TorneosUI.sim(\'' + mid + '\')">⚡ Simular</button></span>';
+  h += '</div>';
+  return h;
+}
+function koLines(){
+  if (!T.ko) return '';
+  var h = '';
+  T.ko.rounds.forEach(function(rd, ri){
+    var live = ri === T.ko.rounds.length - 1;
+    h += '<div class="trn-day">' + esc(rd.name) + (rd.bye ? ' · ' + rd.bye + ' descansan' : '') + '</div>';
+    rd.ties.forEach(function(tie){
+      if (!tie.away){ h += '<div class="trn-m"><span class="nm">' + badge(tie.home) + '</span><span class="res">descansa (BYE) — clasifica directo</span></div>'; return; }
+      var nOfN = tie.twoLeg ? ' · ida y vuelta' : ' · único';
+      if (!live || tie.winner){
+        h += '<div class="trn-m"><span class="nm r">' + badge(tie.home) + '</span><span class="sc">' +
+             (tie.l1 ? tie.l1.gh + ' - ' + tie.l1.ga : 'vs') + '</span><span class="nm">' + badge(tie.away) + '</span>' +
+             (tie.winner ? '<span class="res">✅ ' + esc(tie.res || '') + ' ➜ pasa <b>' + esc(TOURNEOS.teamById(tie.winner).name) + '</b></span>' :
+              (tie.l2 ? '<span class="res">vuelta: ' + tie.l2.gh + ' - ' + tie.l2.ga + '</span>' : '')) + '</div>';
+        return;
+      }
+      /* llave viva */
+      if (!tie.l1){
+        h += matchCard(tie.home, tie.away, tie.id, esc(rd.name) + nOfN);
+      } else if (tie.twoLeg && tie.l2 && !tie.l2.played){
+        h += matchCard(tie.away, tie.home, tie.id, esc(rd.name) + ' · vuelta (ida: ' + tie.l1.gh + '-' + tie.l1.ga + ')');
+      }
+    });
+  });
+  return h;
+}
+function standingsTable(ids2, rounds, adv, best3n){
+  var st = TOURNEOS.standings(ids2, rounds);
+  var h = '<table class="trn-table"><tr><th>Equipo</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th></tr>';
+  st.forEach(function(r, ix){
+    var cls = ix < (adv || 0) ? ' class="trn-zoneA"' : (best3n && ix === 2 ? ' class="trn-zone3"' : '');
+    h += '<tr' + cls + '><td>' + badge(r.id) + (T.cfg.userTeam === r.id ? ' ⭐' : '') + '</td><td>' + r.pj + '</td><td>' + r.g + '</td><td>' + r.e + '</td><td>' + r.p + '</td><td>' + r.gf + '</td><td>' + r.gc + '</td><td>' + (r.gf - r.gc) + '</td><td><b>' + r.pts + '</b></td></tr>';
+  });
+  return h + '</table>';
+}
+function statList(cat, icon, label){
+  var top = TOURNEOS.topStats(T, cat, 10);
+  var h = '<div class="trn-card"><h3>' + icon + ' ' + label + '</h3>';
+  if (!top.length) h += '<p>Sin datos todavía — juega o simula partidos.</p>';
+  h += '<table class="trn-table">';
+  top.forEach(function(x, i){
+    h += '<tr><td>' + (i + 1) + '. ' + esc(x.name) + '</td><td style="text-align:left;color:#8fa2cf">' + esc((TOURNEOS.teamById(x.team) || {}).name || '') + '</td><td><b>' + x.n + '</b></td></tr>';
+  });
+  return h + '</table></div>';
+}
+function renderPlay(){
+  var h = '<div class="trn-wrap"><div class="trn-top"><h1>' + esc(T.cfg.icon) + ' ' + esc(T.cfg.name) + '</h1><span class="sub">' + phaseLabel() + ' · ' + T.teams.length + ' equipos</span>' +
+          '<button class="trn-x" onclick="TorneosUI.close()">✕ cerrar</button></div>';
+  if (T.phase === 'done'){
+    var ch = TOURNEOS.teamById(T.champion), ru = TOURNEOS.teamById(T.runnerUp);
+    h += '<div class="trn-banner"><div style="font-size:34px">' + esc(T.cfg.icon) + '</div><b>¡' + esc(ch.name) + ' CAMPEÓN!</b>' +
+         (ru ? '<div style="color:#cfd8ff;font-size:13px;margin-top:4px">subcampeón: ' + esc(ru.name) + '</div>' : '') +
+         '<div style="margin-top:10px"><button class="trn-btn ghost" onclick="TorneosUI.deleteSave()">🗑️ borrar y volver al hub</button></div></div>';
+  }
+  h += '<div class="trn-row" style="align-items:center"><div style="flex:none;display:flex;gap:8px;flex-wrap:wrap">' +
+       '<button class="trn-btn sim" onclick="TorneosUI.simNextDay()">⚡ simular jornada</button>' +
+       '<button class="trn-btn sim" onclick="TorneosUI.simRest()">⏩ simular hasta el final</button></div>';
+  var nx = T.cfg.userTeam ? TOURNEOS.nextUserMatch(T) : null;
+  if (nx) h += '<div style="color:#f5c451;font-size:12.5px">▶ tu próximo: ' + esc(TOURNEOS.teamById(nx.home).name) + ' vs ' + esc(TOURNEOS.teamById(nx.away).name) + ' · ' + esc(nx.label) + '</div>';
+  h += '</div>';
+  h += '<div class="trn-mtabs">' +
+       [['match', '📅 Partidos'], ['table', '📊 Tablas y cuadro'], ['stats', '🏅 Estadísticas'], ['log', '📜 Historial']].map(function(t2){
+         return '<button class="' + (tab === t2[0] ? 'on' : '') + '" onclick="TorneosUI.tab(\'' + t2[0] + '\')">' + t2[1] + '</button>';
+       }).join('') + '</div>';
+
+  if (tab === 'match'){
+    if (T.league){
+      T.league.rounds.forEach(function(rd, di){
+        h += '<div class="trn-day">Jornada ' + (di + 1) + '</div>';
+        rd.matches.forEach(function(m){ h += matchCard(m.home, m.away, m.id); });
+      });
+    }
+    if (T.groups){
+      T.groups.forEach(function(g){
+        h += '<div class="trn-day">' + esc(g.name) + '</div>';
+        g.rounds.forEach(function(rd){ rd.matches.forEach(function(m){ h += matchCard(m.home, m.away, m.id); }); });
+      });
+    }
+    h += koLines();
+  } else if (tab === 'table'){
+    if (T.league){
+      h += '<div class="trn-card"><h3>📋 Tabla de posiciones</h3>' + standingsTable(T.league.teams, T.league.rounds, 1, 0) + '</div>';
+    }
+    if (T.groups){
+      var gcfg = T.cfg.groups;
+      T.groups.forEach(function(g){
+        h += '<div class="trn-card" style="margin-bottom:12px"><h3>' + esc(g.name) + '</h3>' + standingsTable(g.teams, g.rounds, gcfg.advance, gcfg.best3) + '</div>';
+      });
+      h += '<p class="sub" style="color:#8fa2cf">🟩 avanzan directo' + (gcfg.best3 ? ' · 🟦 terceros a la espera de los ' + gcfg.best3 + ' mejores' : '') + '</p>';
+    }
+    if (T.ko){
+      h += '<div class="trn-card"><h3>⚔️ Cuadro de eliminatorias</h3>' + koLines() + '</div>';
+    }
+  } else if (tab === 'stats'){
+    h += '<div class="trn-stat-grid">' + statList('sc', '👟', 'Goleadores') + statList('as', '🎯', 'Asistencias') + statList('yc', '🟨', 'Tarjetas amarillas') + statList('rc', '🟥', 'Tarjetas rojas') + '</div>';
+  } else if (tab === 'log'){
+    h += '<div class="trn-log">' + T.log.slice(-120).reverse().map(function(l){ return '<div>' + esc(l) + '</div>'; }).join('') + '</div>';
+  }
+  h += '</div>';
+  root.innerHTML = h;
+}
+
+function render(){ if (!root) return; if (view === 'hub') renderHub(); else if (view === 'builder') renderBuilder(); else renderPlay(); }
+
+/* ─────────── acciones ─────────── */
+function sim(mid){ if (!T) return; TOURNEOS.simMatch(T, mid); if (T.phase !== 'done') TOURNEOS.progress(T); render(); }
+function simNextDay(){
+  if (!T) return;
+  if (T.phase === 'ko'){
+    for (var p = 0; p < 2; p++){
+      var rd = T.ko.rounds[T.ko.rounds.length - 1]; if (!rd) break;
+      rd.ties.forEach(function(tie){ TOURNEOS.simTieLeg(T, tie); });
+    }
+  } else TOURNEOS.simAll(T, { kind: 'day', day: firstPendingDay() });
+  TOURNEOS.save(T); render();
+}
+function firstPendingDay(){
+  var rounds = T.league ? T.league.rounds : (T.groups ? T.groups[0].rounds : []);
+  for (var i = 0; i < rounds.length; i++) for (var j = 0; j < rounds[i].matches.length; j++) if (!rounds[i].matches[j].played) return i;
+  return 0;
+}
+function simRest(){ if (!T) return; for (var i = 0; i < 24 && T.phase !== 'done'; i++) TOURNEOS.simAll(T); TOURNEOS.save(T); render(); }
+function deleteSave(){ TOURNEOS.clearSave(); T = null; view = 'hub'; render(); }
+
+/* ─────────── cancha ─────────── */
+function play(mid){
+  if (!T) return;
+  var meta = TOURNEOS.matchMeta(T, mid); if (!meta) return;
+  var f = TOURNEOS.findMatch(T, mid); if (!f) return;
+  if (f.m && f.m.played) return;
+  var border = TOURNEOS.teamById(meta.home), visit = TOURNEOS.teamById(meta.away);
+  var q = ['career=1',
+    'club=' + encodeURIComponent(meta.hName), 'rival=' + encodeURIComponent(meta.aName),
+    'h1=' + encodeURIComponent(meta.hColors[0]), 'h2=' + encodeURIComponent(meta.hColors[1]),
+    'a1=' + encodeURIComponent(meta.aColors[0]), 'a2=' + encodeURIComponent(meta.aColors[1]),
+    'form=' + encodeURIComponent('4-3-3'),
+    'roster=' + encodeURIComponent(JSON.stringify(meta.roster)),
+    'rosterA=' + encodeURIComponent(JSON.stringify(meta.rosterA)),
+    'diff=' + encodeURIComponent(T.cfg.diff || '1'), 'dpc=100',
+    'comp=copa', 'compx=' + encodeURIComponent(T.cfg.icon + ' ' + T.cfg.name + ' · ' + meta.label),
+    'bus=torneos'].join('&');
+  ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:#000;z-index:99999;display:flex;flex-direction:column';
+  var bar = document.createElement('div');
+  bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#0b0d17;color:#8fa2cf;font:700 12px system-ui,-apple-system,sans-serif';
+  var ttl = document.createElement('b'); ttl.style.color = '#fff'; ttl.style.fontSize = '13px';
+  ttl.textContent = meta.hName + ' vs ' + meta.aName + ' — ' + T.cfg.name + ' · ' + meta.label;
+  var btn = document.createElement('button');
+  btn.textContent = '✕ salir (no cuenta)';
+  btn.style.cssText = 'background:#1b2138;color:#cfd8ff;border:1px solid #2c3760;border-radius:8px;padding:6px 10px;font:800 12px system-ui;cursor:pointer;margin-left:auto';
+  btn.onclick = function(){ if (window.confirm('¿Salir del partido? NO se apunta el marcador.')) closeOv(); };
+  bar.appendChild(ttl); bar.appendChild(btn); ov.appendChild(bar);
+  var fr = document.createElement('iframe');
+  fr.src = 'haxball-fc27.html?' + q; fr.style.cssText = 'flex:1;border:0;width:100%';
+  ov.appendChild(fr); document.body.appendChild(ov);
+  ov._mid = mid;
+  try { if (typeof Music !== 'undefined' && Music.duck) Music.duck(); } catch (e) {}
+}
+function closeOv(){
+  if (ov && ov.parentNode) ov.parentNode.removeChild(ov); ov = null;
+  try { if (typeof Music !== 'undefined' && Music.restore) Music.restore(); } catch (e) {}
+}
+window.addEventListener('message', function(e){
+  var d = e && e.data;
+  if (!d || d.type !== 'FC27_RESULT_TOUR' || !ov || !T) return;
+  var mid = ov._mid;
+  closeOv();
+  var res = TOURNEOS.applyPlayed(T, mid, d.gh | 0, d.ga | 0);
+  TOURNEOS.save(T);
+  var extra = '';
+  var fx = TOURNEOS.findMatch(T, mid);
+  if (fx && fx.tie && fx.tie.res && /TE |pen /.test(fx.tie.res)) extra = ' (' + fx.tie.res + ')';
+  try {
+    if (window.GameDialog && GameDialog.show)
+      GameDialog.show('⚽ Marcador final: ' + d.gh + ' - ' + d.ga + extra, [{ label: 'SEGUIR CON EL TORNEO' }]);
+  } catch (e2) { window.alert('Marcador: ' + d.gh + ' - ' + d.ga + extra); }
+  render();
+});
+
+return {
+  open: open, close: close, render: render,
+  viewHub: function(){ view = 'hub'; render(); },
+  newBuilder: newBuilder, startPreset: startPreset, create: create,
+  continueLast: continueLast, deleteSave: deleteSave,
+  toggle: function(id){ if (B.ids[id]) delete B.ids[id]; else B.ids[id] = 1; renderBuilder(); },
+  search: function(q){ B.q = q; renderBuilder(); },
+  kind: function(k){ B.kind = k; renderBuilder(); },
+  pickRandom: function(n){
+    var d = TOURNEOS.db(), all = d.clubs.concat(d.sels), add = 0;
+    while (add < n){
+      var t2 = all[(Math.random() * all.length) | 0];
+      if (!B.ids[t2.id]) { B.ids[t2.id] = 1; add++; }
+    }
+    renderBuilder();
+  },
+  clearIds: function(){ B.ids = {}; renderBuilder(); },
+  cfgSet: cfgSet, grpSet: grpSet,
+  tab: function(k){ tab = k; render(); },
+  sim: sim, simNextDay: simNextDay, simRest: simRest,
+  play: play
+};
+})();
+
+</script>
 </body>
 </html>

@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<script>
+/* 🏠 LA UT NACE DEL MENÚ: quien entra en frío (favorito, historial, link suelto) va primero a la PANTALLA DE TÍTULO.
+   La apertura legítima viene con window.open del menú (deja opener); recargas dentro de la misma sesión pasan. */
+try {
+ if (!window.opener && sessionStorage.getItem('fc27_ut_ok') !== '1') location.replace('index.html');
+ else sessionStorage.setItem('fc27_ut_ok', '1');
+} catch (e) {}
+</script>
 <title>FC 2027 · Ultimate Team</title>
 <style>
 :root{--bg:#0b1020;--pan:#131a2e;--pan2:#0f1626;--gold:#f5c451;--tx:#e8eef6;--mut:#8fa3bb;--grn:#3ddc84;--red:#ff6b6b;--blu:#6ea8fe}
