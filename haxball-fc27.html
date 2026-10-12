@@ -335,7 +335,7 @@ body.touch #ctrl .kb{display:none}
   </div>
 </div>
 <div id="ctrl"><span class="kb"><kbd>WASD</kbd>/<kbd>◀▲▼▶</kbd> mover · <kbd>ESPACIO</kbd>/<kbd>J</kbd> pase · entrada · <kbd>L</kbd>/<kbd>X</kbd> al hueco · centro · <kbd>C</kbd> CAMBIO de jugador · <kbd>K</kbd> disparo (toque = colocado ✋ · mantén = cañonazo 🚀) · <kbd>SHIFT</kbd> ⚡SPRINT (mantén) · <kbd>Q</kbd>/<kbd>E</kbd> rizado · <kbd>↑↓</kbd> en vuelo = ¡doblarla! 🌀 · <kbd>ESC</kbd> pausa · <kbd>M</kbd> silencio</span><br><span id="tsup" style="display:none">Joystick mueve · verde = pase/entrada · 💙 azul = al hueco/centro con balón · CAMBIO sin ella · 🔄 cian = CAMBIO de jugador cuando defiendes · roja = disparo (toque = colocado ✋ · mantén = cañonazo) · amarilla ⚡ = SPRINT (gasta energía) · inclina el stick = rizado, ¡también en vuelo! 🌀</span></div>
-<div id="taca">FC27 Arcade · 11v11 · v2.4 El Cronista 🎙️</div>
+<div id="taca">FC27 Arcade · 11v11 · v4.1.2 • 12-oct 🏁</div>
 <script>
 /* ╔═══════════════ HAXBALL 11v11 · FC27 · v0.3 ═══════════════╗
    tocar = poseer · solo se suelta: entrada / pase / tiro
@@ -677,6 +677,8 @@ function resetClock(){
 }
 /* ── ENTRETIEMPO 🍊: pausa FIFA-lite con ajuste de XI y banquillo ── */
 function openHt(){
+ /* 🛡️ VETO NUCLEAR: tras el pitazo final (o a un suspiro de él) el entretiempo NO existe */
+ if(S.st==='over'||S.tLeft<=-(S.addT?S.addT[1]:0)+.5)return;
  S.htDone=true;S.st='ht';
  SFX.whistle(2);SFX.ui();
  document.getElementById('clock').textContent="45'";
@@ -1512,6 +1514,8 @@ function tick(){
  if(S.st==='play')sim(dt);
  else if(S.st==='replay')replayTick(dt);           /* 📺 repetición a cámara lenta */
  else if(S.st==='goal')celTick(dt);                /* 🎉 el goleador corre a la tribuna */
+ else if(S.st==='over'){const _a=document.getElementById('ht'),_b=document.getElementById('htBody');
+  if(_a)_a.classList.remove('on');if(_b)_b.classList.remove('on');}   /* 🧯 en la pantalla final no cabe entretiempo */
  trTick(dt);                                      /* ✨ transición wipe entre cortes */
  recTick(dt);                                     /* graba la jugada para la tele */
  crowdTick(dt);                                   /* la grada respira: ola, cánticos */
