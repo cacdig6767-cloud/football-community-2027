@@ -618,11 +618,11 @@ const FRM=[FRMH,FRMH.map(s=>[W-s[0],s[1]])];
 let GKX=[FIELD.x+24,FIELD.x+FIELD.w-24];
 /* 🏟️ ARENAS PEQUEÑAS (FutSal): el rectángulo se achica pero el balón sigue vivo */
 function arenaSMALL(){
- const sc=(FUTSAL&&SIDE<=4)?0.50:0.62;
+ const sc=0.74;   /* 🏟️ punto medio justo: ni miniatura que los controles tapan, ni cartel de 11v11 */
  FIELD.w=Math.round(660*sc*1.55); FIELD.h=Math.round(492*sc*1.06);
  FIELD.x=Math.round(W/2-FIELD.w/2); FIELD.y=Math.round(H/2-FIELD.h/2);
  GKX=[FIELD.x+20,FIELD.x+FIELD.w-20];
- GOAL.h=FUTSAL?96:GOAL.h;
+ GOAL.h=116;      /* arco a medida de la pista media */
 }
 /* 🧩 dibujo para pocos: jugosa geometría de barrio (porcentajes del rectángulo) */
 function spotsN(n){
@@ -2286,7 +2286,7 @@ document.getElementById('btnPen').onclick=()=>{
 document.getElementById('btnGold').onclick=()=>{
  SFX.ui();hideBanner();S._ggWant=true;S.etNeed=true;startExtraTime();   /* 🥇 la próxima red es sentencia */
 };
-try{if(FUTSAL||MT>0){arenaSMALL();}}catch(e){}
+try{if(FUTSAL){arenaSMALL();}}catch(e){}   /* ojo: el mt solo encoge el reloj, NUNCA la cancha (carrera salvada) */
 document.getElementById('btnExit').onclick=()=>{
  SFX.ui();hideBanner();
  if(window.__career){try{parent.postMessage(careerActa(),'*');}catch(e){}}   /* re-post idempotente: el padre cierra el overlay */
