@@ -317,11 +317,32 @@ function toast(t) {
   alert(t);
 }
 
-/* ── UI del hub (inyectada y autoreparable) ──────────────────────────── */
-function openTab() {
-  try { if (typeof Dashboard !== 'undefined' && Dashboard.switchTab) { Dashboard.switchTab('quick'); return; } } catch (e) {}
-  var t = document.querySelector('[data-tab="quick"]'); if (t) t.click();
+/* ── pantalla propia (modo de menú principal, como TorneosUI) ────────── */
+function open() {
+  if (typeof document === 'undefined') return;
+  ensureTab();
+  var sc = document.getElementById('qm-screen');
+  if (!sc) {
+    sc = document.createElement('div');
+    sc.id = 'qm-screen';
+    sc.style.cssText = 'position:fixed;inset:0;z-index:9000;background:linear-gradient(180deg,#0a0f18,#070b13);overflow-y:auto;display:none';
+    sc.innerHTML =
+      '<div style="position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(7,11,19,.92);border-bottom:1px solid #1c2542;backdrop-filter:blur(6px)">' +
+      '<button id="qm-back" style="background:#1b2138;color:#cfd8ff;border:1px solid #2c3760;border-radius:10px;padding:8px 14px;font:800 13px system-ui;cursor:pointer">← Menú</button>' +
+      '<div style="font:900 15px system-ui;color:#ffd166;letter-spacing:1px">⚡ PARTIDO RÁPIDO</div></div>' +
+      '<div id="qm-body" style="max-width:860px;margin:0 auto;padding:12px 10px 60px"></div>';
+    document.body.appendChild(sc);
+    var bk = document.getElementById('qm-back');
+    if (bk) bk.onclick = function () { close(); };
+  }
+  sc.style.display = '';
+  render();
 }
+function closeOverlay() {
+  var sc = document.getElementById('qm-screen');
+  if (sc) sc.style.display = 'none';
+}
+function openTab() { open(); }
 
 var CSS_ID = 'qm-css';
 function css() {
@@ -482,61 +503,22 @@ function renderSettings() {
   if (s1) s1.onchange = write; if (s2) s2.onchange = write;
 }
 
-/* ── autoinyección de pestaña (el caché móvil no gana dos veces) ─────── */
+/* ── autoinyección del modo en el MENÚ PRINCIPAL (el caché móvil no gana dos veces) │
+   Si el HTML viejo no trae la tarjeta, se siembra junto a TORNEOS. ──────────────── */
 function ensureTab() {
   if (typeof document === 'undefined' || !document.querySelector) return;
   try {
-    /* botones de navegación si el HTML viejo no los tiene */
-    if (!document.querySelector('[data-tab="quick"]')) {
-      var nh = document.querySelector('.fc27-topitem[data-tab="newshub"]');
-      if (nh && nh.parentNode) {
+    if (!document.getElementById('qm-menu-btn')) {
+      var t = document.querySelector('.fc-menu-grid button[onclick*="TorneosUI"]');
+      if (t && t.parentNode) {
         var b = document.createElement('button');
-        b.className = 'pes-tab fc27-topitem'; b.setAttribute('data-tab', 'quick');
-        b.setAttribute('onclick', "Dashboard.switchTab('quick')");
-        b.style.borderColor = 'rgba(246,173,45,.65)';
-        b.textContent = '⚡ Rápido'; nh.parentNode.insertBefore(b, nh);
-      }
-      var sh = document.querySelector('.fc27-item[data-tab="newshub"]');
-      if (sh && sh.parentNode) {
-        var s = document.createElement('button');
-        s.className = 'pes-tab fc27-item'; s.setAttribute('data-tab', 'quick');
-        s.setAttribute('onclick', "Dashboard.switchTab('quick')");
-        s.style.outline = '1px solid rgba(246,173,45,.55)';
-        s.innerHTML = '<i>⚡</i><span>Rápido</span>'; sh.parentNode.insertBefore(s, sh);
+        b.className = 'fc-btn fc-btn-wide'; b.id = 'qm-menu-btn';
+        b.setAttribute('style', 'border-color:rgba(255,150,50,.6);background:linear-gradient(100deg,rgba(255,150,50,.16),rgba(245,60,120,.08));box-shadow:0 0 24px rgba(255,150,50,.14)');
+        b.setAttribute('onclick', 'QUICKMATCH.open()');
+        b.innerHTML = '⚡ PARTIDO RÁPIDO<small>¡NUEVO MODO! Amistosos, finales oficiales y FutSal (2v2–5v5 con arenas y paredes)</small>';
+        t.parentNode.insertBefore(b, t.nextSibling);
       }
     }
-    /* panel contenedor */
-    if (!document.getElementById('qm-body')) {
-      var host = document.getElementById('tab-newshub');
-      var panel = document.createElement('div');
-      panel.id = 'tab-quick'; panel.className = 'hidden';
-      panel.innerHTML = '<div id="qm-body" style="max-width:820px;margin:0 auto;padding:10px 6px 40px"></div>';
-      if (host && host.parentNode) host.parentNode.insertBefore(panel, host);
-      else if (document.querySelector('main')) document.querySelector('main').appendChild(panel);
-      else if (document.body) document.body.appendChild(panel);
-    }
-    /* switchTab: enganche suave si la lista vive en otra capa */
-    if (typeof Dashboard !== 'undefined' && Dashboard.switchTab && !Dashboard.switchTab._qm) {
-      var o = Dashboard.switchTab;
-      var w = function (tab) {
-        var r = o.apply(this, arguments);
-        try {
-          var el = document.getElementById('tab-quick');
-          if (el) el.classList.toggle('hidden', tab !== 'quick');
-          if (tab === 'quick') render();
-          if (tab === 'system') renderSettings();
-        } catch (e) {}
-        return r;
-      };
-      w._qm = true; Dashboard.switchTab = w;
-    }
-    /* mobi-bar */
-    try {
-      if (typeof Mobile !== 'undefined' && Mobile.TABS && !Mobile.TABS.some(function (t) { return t[0] === 'quick'; })) {
-        Mobile.TABS.splice(1, 0, ['quick', '⚡', 'Rápido']);
-        if (Mobile.buildBar) Mobile.buildBar();
-      }
-    } catch (e) {}
   } catch (e) {}
 }
 if (typeof document !== 'undefined') {
@@ -550,6 +532,7 @@ return {
   autoXI: autoXI, teamRatingOf: teamRatingOf, colours: colorsOf, colorsOf: colorsOf,
   buildURL: buildURL, launch: launch, close: close,
   render: render, renderSettings: renderSettings, ensureTab: ensureTab, openTab: openTab,
+  open: open, closeOverlay: closeOverlay,
   cfg: cfg, settings: settings
 };
 });
