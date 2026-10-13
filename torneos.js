@@ -583,19 +583,44 @@ function matchMeta(T, mid){
 }
 
 /* ── partido JUGADO en cancha: aplicar y resolver lo que falte ── */
-function applyPlayed(T, mid, gh, ga){
+function applyPlayed(T, mid, gh, ga, dec){
   var f = findMatch(T, mid); if (!f) return null;
   if (f.m) return playResult(T, mid, gh, ga, true);
   if (f.tie){
     var tie = f.tie;
     if (tie.twoLeg && tie.l1 && tie.l1.played && tie.l2 && !tie.l2.played){
-      /* la cancha jugó la VUELTA: home de cancha = tie.away */
+      /* la cancha jugó la VUELTA: home de cancha = tie.away (w=0 ⇒ gana tie.away) */
       var hT = teamById(tie.away), aT = teamById(tie.home);
       tie.l2 = { played: true, gh: gh, ga: ga, ev: eventsForPlayed(gh, ga, hT, aT) };
       tie.l2.ev.forEach(function(e){ feedStats(T, e); });
-      resolveTie(T, tie);
+      if (dec && dec.pen && dec.w != null){                                  /* 🥅 la tanda ya se jugó ahí abajo */
+        var ah = tie.l1.gh + tie.l2.ga, aa = tie.l1.ga + tie.l2.gh;
+        tie.winner = (dec.w === 0) ? tie.away : tie.home;
+        tie.res = 'Global ' + ah + '-' + aa + ' · pen ' + dec.pen[0]+'-'+dec.pen[1];   /* la tanda se lee tal y como se cobró en cancha */
+        tie.pens = dec.pen.slice();
+        T.log.push('🥅 Penales ' + dec.pen[0] + '-' + dec.pen[1] + ': pasa ' + teamById(tie.winner).name + '.');
+      } else {
+        resolveTie(T, tie);
+        if (dec && dec.et && tie.res && !/TE|pen/.test(tie.res)) tie.res += ' · TE';
+      }
     } else {
-      playResult(T, mid, gh, ga, true);
+      if (dec && dec.pen && dec.w != null && !tie.twoLeg){                   /* 🥅 decisión en cancha: NO re-simular (partido único) */
+        if (tie.l1 && tie.l1.played){                                        /* 📨 re-post del acta (btnExit): no pisar nada */
+          tie.winner = (dec.w === 0) ? tie.home : tie.away;
+        } else {
+        var hTt = teamById(tie.home), aT2 = teamById(tie.away);
+        tie.l1 = { played: true, gh: gh, ga: ga, ev: eventsForPlayed(gh, ga, hTt, aT2) };
+        tie.l1.ev.forEach(function(e){ feedStats(T, e); });
+        tie.winner = (dec.w === 0) ? tie.home : tie.away;
+        tie.res = gh + '-' + ga + ' · pen ' + dec.pen[0]+'-'+dec.pen[1];   /* misma regla: orden del dictamen */
+        tie.pens = dec.pen.slice();
+        T.log.push('🥅 Penales ' + dec.pen[0] + '-' + dec.pen[1] + ': pasa ' + teamById(tie.winner).name + '.');
+        }
+      } else if (tie.l1 && tie.l1.played) {                                    /* llave ya cerrada ante re-post: silencio */ return tie;
+      } else {
+        playResult(T, mid, gh, ga, true);
+        if (dec && dec.et && tie.res && !/TE|pen/.test(tie.res)) tie.res += ' · TE';
+      }
     }
     progress(T); save(T);
     return tie;

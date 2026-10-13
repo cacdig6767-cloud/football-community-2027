@@ -38543,6 +38543,14 @@ window.FC27Bridge = (function () {
     FC27Bridge.pending = { gh: null, ga: null, home: home, away: away, kind: kind, ci: ci };  /* no arrastrar resultados viejos de una tanda anterior */
     var pcA = pairColors(opp), pcH = pairColors(mine);
     var compK = kind === 'supercup' ? 'super' : (kind === 'cup' ? 'copa' : 'liga');
+    if (kind === 'supercup') FC27Bridge.pending.mw = 1;                     /* 🏁 final única: no acepta empate */
+    if (kind === 'cup') {                                                    /* 🏁 copa: la IDA sí puede empatar */
+      try {
+        var _cu = ci === 3 ? s._scCup : (ci === 0 ? s.cups.nat : ((ci === 2 && s.cups.cwc) ? s.cups.cwc : s.cups.intl));
+        var _ru = _cu && _cu.rounds ? _cu.rounds[_cu.idx] : null;
+        if (!_ru || _ru.leg !== 1) FC27Bridge.pending.mw = 1;                /* final única o VUELTA → cancha decide */
+      } catch (eMW) { FC27Bridge.pending.mw = 1; }
+    }
     var compX = (typeof compN === 'string' && compN) ? compN : (kind === 'league' ? ((s.league && s.league.name) || 'LIGA') : '');
     var q = ['career=1', 'club=' + encodeURIComponent(mine), 'rival=' + encodeURIComponent(opp),
       'diff=' + (typeof s.diff === 'number' ? s.diff : 0), 'dpc=' + (s.diffPct == null ? 100 : s.diffPct),
@@ -38552,6 +38560,7 @@ window.FC27Bridge = (function () {
       'form=' + encodeURIComponent(s.formation || '4-3-3'),
       'roster=' + encodeURIComponent(JSON.stringify(roster)),
       'rosterA=' + encodeURIComponent(JSON.stringify(rosterRival(oppRating)))]
+      .concat(FC27Bridge.pending.mw ? ['mustWin=1'] : [])
       .concat(typeof CanchaStudio !== 'undefined' ? CanchaStudio.qs() : []).join('&');   /* 🎛️ +tus gustos de cancha */
     ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:#000;z-index:99999;display:flex;flex-direction:column';
@@ -38578,6 +38587,7 @@ window.FC27Bridge = (function () {
     if (typeof d.gh !== 'number' || typeof d.ga !== 'number') return;
     var p = FC27Bridge.pending || { gh: null, ga: null, home: null, away: null, kind: 'league', ci: null };
     p.gh = d.gh; p.ga = d.ga;   /* orientado a MÍ (el haxball siempre me pone de local) */
+    if (p.mw && d.w != null) { p.w = d.w; p.pen = d.pen || null; }   /* 🏁 la cancha me trae al dueño de la llave */
     FC27Bridge.pending = p;
     close();
     if (p.kind === 'cup') {
@@ -39088,6 +39098,7 @@ function play(mid){
     'rosterA=' + encodeURIComponent(JSON.stringify(meta.rosterA)),
     'diff=' + encodeURIComponent(T.cfg.diff || '1'), 'dpc=100',
     'comp=copa', 'compx=' + encodeURIComponent(T.cfg.icon + ' ' + T.cfg.name + ' · ' + meta.label),
+    (/Vuelta|Partido único/.test(meta.label) ? 'mustWin=1' : 'mustWin=0'),   /* 🏁 estas llaves no aceptan empate */
     'bus=torneos'].join('&');
   ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:#000;z-index:99999;display:flex;flex-direction:column';
@@ -39115,7 +39126,8 @@ window.addEventListener('message', function(e){
   if (!d || d.type !== 'FC27_RESULT_TOUR' || !ov || !T) return;
   var mid = ov._mid;
   closeOv();
-  var res = TOURNEOS.applyPlayed(T, mid, d.gh | 0, d.ga | 0);
+  var dec = (d.w != null || d.pen) ? { w: d.w, pen: d.pen, et: d.et } : null;
+  var res = TOURNEOS.applyPlayed(T, mid, d.gh | 0, d.ga | 0, dec);
   TOURNEOS.save(T);
   var extra = '';
   var fx = TOURNEOS.findMatch(T, mid);
