@@ -2221,6 +2221,7 @@ input[type="range"]{accent-color:#00ff87}
             <button class="pes-tab fc27-topitem" data-tab="transfer" onclick="Dashboard.switchTab('transfer')">Traspasos</button>
             <button class="pes-tab fc27-topitem" data-tab="starting-xi" onclick="Dashboard.switchTab('starting-xi')">Once inicial</button>
             <button class="pes-tab fc27-topitem" data-tab="cups" onclick="Dashboard.switchTab('cups')">Oficina</button>
+            <button class="pes-tab fc27-topitem" data-tab="newshub" onclick="Dashboard.switchTab('newshub')" style="border-color:rgba(245,196,81,.5)">📰 News Hub</button>
             <button class="pes-tab fc27-topitem" data-tab="system" onclick="Dashboard.switchTab('system')">Sistema</button>
         </nav>
         <div class="fc27-clubbox">
@@ -2246,6 +2247,7 @@ input[type="range"]{accent-color:#00ff87}
             <button class="pes-tab fc27-item" data-tab="transfer" onclick="Dashboard.switchTab('transfer')"><i>🔁</i><span>Traspasos</span></button>
             <button class="pes-tab fc27-item" data-tab="database" onclick="Dashboard.switchTab('database')"><i>🌍</i><span>Ligas</span></button>
             <button class="pes-tab fc27-item" data-tab="cups" onclick="Dashboard.switchTab('cups')"><i>🏆</i><span>Copas</span></button>
+            <button class="pes-tab fc27-item" data-tab="newshub" onclick="Dashboard.switchTab('newshub')" style="outline:1px solid rgba(245,196,81,.45)"><i>📰</i><span>News Hub</span></button>
             <button class="pes-tab fc27-item" data-tab="system" onclick="Dashboard.switchTab('system')"><i>💾</i><span>Sistema</span></button>
             <div style="flex:1"></div>
             <button class="fc27-item fc27-exit" onclick="Game.showScreen('screen-main-menu')"><i>🚪</i><span>Salir</span></button>
@@ -2254,6 +2256,12 @@ input[type="range"]{accent-color:#00ff87}
 
         <!-- MAIN -->
         <main class="fc27-main">
+            <div id="tab-newshub" class="hidden">
+                <section class="fc27-card">
+                    <h3 class="fc27-h">📰 NEWS HUB — la portada del mundo</h3>
+                    <div id="newshub-body"></div>
+                </section>
+            </div>
             <div id="tab-home">
                 <div class="fc27-grid">
                     <div class="fc27-col-main">
@@ -2282,7 +2290,7 @@ input[type="range"]{accent-color:#00ff87}
                                 <span class="fc27-tag">Noticias</span>
                                 <h3 id="news-title">Bienvenido al club</h3>
                                 <p id="news-body">Has sido nombrado nuevo entrenador.</p>
-                                <button class="btn-ghost" style="margin-right:6px" onclick="Game.showScreen('screen-newshub');NEWSHUB.open('mgr',ManagerCareer.state)">📰 NEWS HUB</button>
+                                <button class="btn-ghost" style="margin-right:6px" onclick="Dashboard.switchTab('newshub')">📰 NEWS HUB</button>
                                 <button class="btn-primary" onclick="ManagerCareer.playNextMatch()">▶ Jugar partido</button>
                                 <button class="btn-primary" onclick="FC27Bridge.launch()" style="background:#f5c451;color:#161307;margin-left:6px">🎮 Jugar en cancha</button>
                             </section>
@@ -2320,7 +2328,7 @@ input[type="range"]{accent-color:#00ff87}
                             </div>
                             <div class="fc27-dim" id="fc-next-round">Jornada 1</div>
                             <div class="fc27-dim">🗓️ <span id="next-match-date">-</span></div>
-                            <button class="btn-ghost fc27-block" style="margin-bottom:6px" onclick="Game.showScreen('screen-newshub');NEWSHUB.open('mgr',ManagerCareer.state)">📰 NEWS HUB</button>
+                            <button class="btn-ghost fc27-block" style="margin-bottom:6px" onclick="Dashboard.switchTab('newshub')">📰 NEWS HUB</button>
                             <button class="btn-primary fc27-block" onclick="ManagerCareer.playNextMatch()">▶ Jugar</button>
                             <button class="btn-primary fc27-block" onclick="FC27Bridge.launch()" style="background:#f5c451;color:#161307;margin-top:6px">🎮 Jugar en cancha</button>
                         </section>
@@ -12133,7 +12141,7 @@ StartingXI.renderRoles = function() {
 Dashboard.switchTab = function(tab) {
     document.querySelectorAll('.pes-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.pes-tab[data-tab="' + tab + '"]').forEach(t => t.classList.add('active'));
-    ['home', 'partidos', 'squad', 'youth', 'starting-xi', 'transfer', 'tactics', 'database', 'cups', 'system'].forEach(t => {
+    ['home', 'partidos', 'squad', 'youth', 'starting-xi', 'transfer', 'tactics', 'database', 'cups', 'system', 'newshub'].forEach(t => {
         const el = document.getElementById('tab-' + t);
         if (el) el.classList.toggle('hidden', t !== tab);
     });
@@ -12143,6 +12151,7 @@ Dashboard.switchTab = function(tab) {
     if (tab === 'tactics') this.renderTactics();
     if (tab === 'database') this.renderDatabase();
     if (tab === 'cups') this.renderCups();
+    if (tab === 'newshub') { try { if (typeof NEWSHUB !== 'undefined') NEWSHUB.render('mgr', ManagerCareer.state); } catch (eNH) {} }
     if (tab === 'system') this.renderCareerSummary();
     window.scrollTo(0, 0);
 };
@@ -38484,18 +38493,6 @@ try { if (!boot()) setTimeout(boot, 800); } catch(e){ setTimeout(function(){ try
 
 
 
-<div id="screen-newshub" class="hidden">
-    <div class="pes-header">
-        <div class="club-badge">📰</div>
-        <div class="club-name">NEWS HUB</div>
-        <button class="btn-ghost" onclick="Game.showScreen('screen-dashboard')">← Volver</button>
-    </div>
-    <div class="content-area">
-        <div class="fc27-card" style="max-width:760px;">
-          <div id="newshub-body"></div>
-        </div>
-    </div>
-</div>
 <script>
 /* ══ ⚽ FC27 BRIDGE v1 — el mánager pisa la cancha: tu partido de jornada se JUEGA de verdad (haxball-fc27.html) ══ */
 window.FC27Bridge = (function () {
