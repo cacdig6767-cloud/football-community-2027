@@ -536,9 +536,18 @@ window.__nhEnsureMgrTab = null; /* la asigna wireLater */
 (function wireLater() {
   function decide(s) { return s && s.newsHub ? s : null; }
   /* 🛡️ AUTOSUFICIENCIA: si el HTML del mánager está cacheado y la pestaña no existe, se INYECTA */
+  var _nhChooseTries = 0;
   function nhEnsureMgrTab() {
     try {
       if (typeof Dashboard === 'undefined') return;
+      /* 📰 si hay carrera viva y aún no eligió ligas → abrir el chooser (aun con HTML cacheado) */
+      try {
+        var _st = (typeof ManagerCareer !== 'undefined') ? ManagerCareer.state : null;
+        if (_st && _st.myTeam && (!_st.newsHub || !_st.newsHub.chosen) && _nhChooseTries < 4 && !document.getElementById('nh-chooser-ov')) {
+          _nhChooseTries++;
+          setTimeout(function () { try { API.chooser('mgr', _st, function () { try { API.render('mgr', _st); } catch (e) {} }); } catch (e) {} }, 700);
+        }
+      } catch (eC) {}
       if (document.querySelector('[data-tab="newshub"]')) { nhPatchSwitchTab(); return; }
       var side = document.querySelector('.fc27-side'), top = document.querySelector('.fc27-topbar');
       var main = document.querySelector('.fc27-main');
