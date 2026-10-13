@@ -388,15 +388,18 @@ var API = {
       ]
     };
   },
-  pressPlayer: function (s) {
-    /* rueda de prensa del JUGADOR — cadencia por modo, desactivable con S.pressOff */
+  pressPlayer: function (s, left, force) {
+    /* rueda de prensa del JUGADOR — MUY: cada jornada · INTENSO: mín. 3 por temporada · desactivable (S.pressOff) */
     try {
       var hub = ensure(s); if (!hub) return;
       if (s && s.pressOff) return;
-      var md = s.rhythm || s.speed || '1';
-      if (md === 'MUY') { /* cada jornada */ }
-      else if (md === '1' || md === 1) { if (hub.pressCd > 0) { hub.pressCd--; return; } hub.pressCd = 1; }
-      else { if (hub.pressCd > 0) { hub.pressCd--; return; } hub.pressCd = 2; }
+      left = (left == null ? 1 : left);
+      if (!force) {
+        var md = s.rhythm || s.speed || '1';
+        if (md === 'MUY') { /* cada jornada */ }
+        else if (md === '1' || md === 1) { if (hub.pressCd > 0) { hub.pressCd--; return; } hub.pressCd = 1; }
+        else { if (hub.pressCd > 0) { hub.pressCd--; return; } hub.pressCd = 2; }
+      }
       var me = (s.name || (s.player && s.player.name) || 'tu crack');
       var qs = [];
       var live = API.rumorLive(s);
@@ -430,7 +433,10 @@ var API = {
       var html = '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:#f5c451">🎙️ RUEDA DE PRENSA</div>' +
         '<div style="font-size:.78rem;color:#aeb8d8;margin:4px 0 12px">Sala mixta · micrófondos de 6 medios · ' + esc(me) + '</div></div>';
       var ask = function (ix) {
-        if (ix >= qs.length) return;
+        if (ix >= qs.length) {
+          if (left > 1) setTimeout(function () { API.pressPlayer(s, left - 1, true); }, 420);   /* 🎙️ sesión siguiente en cadena */
+          return;
+        }
         var cur = qs[ix];
         var h = html + '<div style="padding:10px;border:1px solid #33406b;border-radius:12px;background:#101732">' + cur.q + '</div><div style="display:grid;gap:6px;margin-top:10px">' +
           cur.opts.map(function (o, i) { return '<div class="nh-opt" data-i="' + i + '" style="cursor:pointer;padding:10px;border-radius:10px;background:#1b2440;border:1px solid #2c3760;font-size:.85rem">' + esc(o.t) + '</div>'; }).join('') + '</div><div id="nh-fb" style="margin-top:8px;color:#7dd3fc;font-size:.8rem;min-height:18px"></div>';
@@ -515,16 +521,51 @@ window.NEWSHUB = API;
   function decide(s) { return s && s.newsHub ? s : null; }
   document.addEventListener('DOMContentLoaded', function () {
     try {
-      /* Manager: noticias al sumar jornada */
+      /* Manager: noticias al sumar jornada + 🎙️ rueda de prensa cada 3 jornadas o más */
       if (typeof ManagerCareer !== 'undefined' && ManagerCareer.playNextMatch && !ManagerCareer.playNextMatch._nh) {
         var _op = ManagerCareer.playNextMatch.bind(ManagerCareer);
-        var f = function () { var r = _op.apply(this, arguments); try { API.afterJornada(ManagerCareer.state, { mode: 'mgr' }); } catch (e) {} return r; };
+        var f = function () {
+          var r = _op.apply(this, arguments);
+          try {
+            var st = ManagerCareer.state;
+            API.afterJornada(st, { mode: 'mgr' });
+            var hub = st && st.newsHub;
+            if (hub && (hub.tick - (hub.lastPressTick || -3)) >= 3 && typeof Press !== 'undefined' && Press.lastResult) {
+              var lr = Press.lastResult(st);
+              if (lr) { hub.lastPressTick = hub.tick; setTimeout(function () { try { Press.queue('routine', lr, 0); } catch (e) {} }, 350); }
+            }
+          } catch (e) {}
+          return r;
+        };
         f._nh = true; ManagerCareer.playNextMatch = f;
       }
-      /* Jugador: sim de temporada / bloque */
+      /* Manager: al crear carrera → eliges tus 5 ligas para pop-ups 📰 */
+      if (typeof ManagerCareer !== 'undefined' && ManagerCareer.selectTeam && !ManagerCareer.selectTeam._nh) {
+        var _st = ManagerCareer.selectTeam.bind(ManagerCareer);
+        var fst = function () { var r = _st.apply(this, arguments); setTimeout(function () { try { var s2 = ManagerCareer.state; if (s2 && (!s2.newsHub || !s2.newsHub.chosen)) API.chooser('mgr', s2); } catch (e) {} }, 900); return r; };
+        fst._nh = true; ManagerCareer.selectTeam = fst;
+      }
+      /* Jugador: al debutar también eliges ligas del planeta 📰 */
+      if (typeof UI !== 'undefined' && UI.startCareer && !UI.startCareer._nh) {
+        var _sc = UI.startCareer.bind(UI);
+        var fsc = function () { var r = _sc.apply(this, arguments); setTimeout(function () { try { var st2 = (typeof S !== 'undefined') ? S : null; if (st2 && st2.club && (!st2.newsHub || !st2.newsHub.chosen)) API.chooser('pl', st2); } catch (e) {} }, 1500); return r; };
+        fsc._nh = true; UI.startCareer = fsc;
+      }
+      /* Jugador: sim de temporada / bloque → noticia por temporada + 🎙️ mínimo 3 ruedas por campaña */
       if (typeof UI !== 'undefined' && UI.sim && !UI.sim._nh) {
         var _sim = UI.sim.bind(UI);
-        var fs2 = function () { var r = _sim.apply(this, arguments); try { var st = (typeof S !== 'undefined') ? S : null; if (st) { var nb = st.rhythm === 'MUY' ? 0 : (st.rhythm | 0) || 1; for (var i = 0; i < nb; i++) API.afterJornada(st, { mode: 'pl' }); } } catch (e) {} return r; };
+        var fs2 = function () {
+          var r = _sim.apply(this, arguments);
+          try {
+            var st = (typeof S !== 'undefined') ? S : null;
+            if (st) {
+              var nb = st.rhythm === 'MUY' ? 0 : (st.rhythm | 0) || 1;
+              for (var i = 0; i < nb; i++) API.afterJornada(st, { mode: 'pl' });
+              if (nb > 0) setTimeout(function () { try { API.pressPlayer(st, Math.max(3, nb), true); } catch (e) {} }, 900);
+            }
+          } catch (e) {}
+          return r;
+        };
         fs2._nh = true; UI.sim = fs2;
       }
       /* Jugador MUY INTENSO: cada fin de partido = jornada cerrada */
