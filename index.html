@@ -2282,6 +2282,7 @@ input[type="range"]{accent-color:#00ff87}
                                 <span class="fc27-tag">Noticias</span>
                                 <h3 id="news-title">Bienvenido al club</h3>
                                 <p id="news-body">Has sido nombrado nuevo entrenador.</p>
+                                <button class="btn-ghost" style="margin-right:6px" onclick="Game.showScreen('screen-newshub');NEWSHUB.open('mgr',ManagerCareer.state)">📰 NEWS HUB</button>
                                 <button class="btn-primary" onclick="ManagerCareer.playNextMatch()">▶ Jugar partido</button>
                                 <button class="btn-primary" onclick="FC27Bridge.launch()" style="background:#f5c451;color:#161307;margin-left:6px">🎮 Jugar en cancha</button>
                             </section>
@@ -2474,6 +2475,13 @@ input[type="range"]{accent-color:#00ff87}
         <button class="btn-ghost" id="b-theme-reset">↺ Volver al tema de fábrica</button>
     </div>
     <div class="fc27-dim" id="theme-status" style="margin-top:10px;">Tema actual: <b id="theme-current">FC verde (oficial)</b></div>
+</div>
+<div class="fc27-card" style="max-width:640px; margin-top:14px;" id="nh-card">
+    <h3 class="fc27-h">📰 News Hub</h3>
+    <p class="fc27-dim" style="margin-bottom:12px;">Controla la redacción del modo mánager: titulares emergentes y ligas que sigues. Las noticias de tu club siempre se publican en el buzón.</p>
+    <label style="display:flex;align-items:center;gap:8px;font-weight:700;"><input id="nh-pop" type="checkbox" checked onchange="NEWSHUB.togglePopups(ManagerCareer.state,this.checked)"> Mostrar pop-ups de portada entre jornadas</label>
+    <button class="btn-ghost" style="margin-top:10px" onclick="NEWSHUB.chooser('mgr',ManagerCareer.state)">🌍 Elegir mis 5 ligas</button>
+    <div class="fc27-dim" id="nh-set-status" style="margin-top:8px"></div>
 </div>
 <div class="fc27-card" style="max-width:640px; margin-top:14px;" id="a11y-card">
     <h3 class="fc27-h">♿ Accesibilidad</h3>
@@ -11592,6 +11600,7 @@ const _origPlay = ManagerCareer.playNextMatch.bind(ManagerCareer);
 ManagerCareer.playNextMatch = function() {
     const before = this.state.currentRound;
     _origPlay();
+    try { if (typeof NEWSHUB !== 'undefined') NEWSHUB.afterJornada(this.state, { mode: 'mgr' }); } catch (eNH2) {}
     if (document.getElementById('screen-dashboard').classList.contains('hidden')) return;
     if (this.state.currentRound !== before + 1) return;
     try {
@@ -18304,12 +18313,17 @@ var Press = {
   },
   open: function(ctx, r) {
     var self = this;
+    try { self._nhQ = (typeof NEWSHUB !== 'undefined') ? NEWSHUB.pressQuestion(ManagerCareer.state) : null; } catch (eNH) { self._nhQ = null; }
     if (this.hasKey()) {
       this.aiQuestions(ctx, r, function(qs) {
-        self.start(qs || self.pick(ctx), r, !!qs);
+        qs = qs || self.pick(ctx);
+        if (self._nhQ) { qs = [self._nhQ].concat(qs.slice(0, 1)); self._nhQ = null; }   /* 🗞️ el rumor del News Hub entra a la sala */
+        self.start(qs, r, !!qs);
       });
     } else {
-      this.start(this.pick(ctx), r, false);
+      var _qs0 = this.pick(ctx);
+      if (this._nhQ) { _qs0 = [this._nhQ].concat(_qs0.slice(0, 1)); this._nhQ = null; }
+      this.start(_qs0, r, false);
     }
   },
   aiQuestions: function(ctx, r, cb) {
@@ -18353,7 +18367,7 @@ var Press = {
       var body = document.getElementById('press-body');
       if (!body) return;
       var c = document.getElementById('press-count');
-      if (c) c.textContent = '· ' + Math.min(d.step + 1, 2) + '/2';
+      if (c) c.textContent = '· ' + Math.min(d.step + 1, d.qs.length) + '/' + d.qs.length;
       if (d.step >= d.qs.length) {
         body.innerHTML = '<div class="press-fb">' + d.log.join('<br>') + '</div>' +
           '<button class="btn-primary press-next" id="press-done">Terminar rueda ✓</button>';
@@ -38469,6 +38483,18 @@ try { if (!boot()) setTimeout(boot, 800); } catch(e){ setTimeout(function(){ try
 
 
 
+<div id="screen-newshub" class="hidden">
+    <div class="pes-header">
+        <div class="club-badge">📰</div>
+        <div class="club-name">NEWS HUB</div>
+        <button class="btn-ghost" onclick="Game.showScreen('screen-dashboard')">← Volver</button>
+    </div>
+    <div class="content-area">
+        <div class="fc27-card" style="max-width:760px;">
+          <div id="newshub-body"></div>
+        </div>
+    </div>
+</div>
 <script>
 /* ══ ⚽ FC27 BRIDGE v1 — el mánager pisa la cancha: tu partido de jornada se JUEGA de verdad (haxball-fc27.html) ══ */
 window.FC27Bridge = (function () {
@@ -39164,5 +39190,6 @@ return {
 })();
 
 </script>
+<script src="news-hub.js"></script>
 </body>
 </html>

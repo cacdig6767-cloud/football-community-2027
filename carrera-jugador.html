@@ -290,6 +290,7 @@ canvas#share{display:none}
         <button class="btn sec" id="btn-agent" onclick="UI.agentMenu()">🤝 Agente</button>
       </div>
       <div class="row">
+        <button class="btn sec" onclick="NEWSHUB.open('pl',S)">📰 News Hub</button>
         <button class="btn sec" onclick="UI.shop()">🛍️ Tienda</button>
         <button class="btn sec" id="btn-train" onclick="UI.trainPos()">🥋 Entrenamiento</button>
       </div>
@@ -3147,5 +3148,6 @@ if(typeof document!=='undefined'){
 }
 if(typeof module!=='undefined' && module.exports){ module.exports={selfTestRun:selfTestRun, LEAGUES_DB:LEAGUES_DB, newCareer:newCareer}; }
 </script>
+<script src="news-hub.js"></script>
 </body>
 </html>
