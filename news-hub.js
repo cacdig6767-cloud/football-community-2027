@@ -308,26 +308,32 @@ function resolveQueue(hub, mode, s) {
 
 /* ── Pop-up único, regulado ── */
 var popBusy = false;
+/* 🪟 modal propio del News Hub — el GameDialog del hub mánager ESCAPA el HTML (se veía crudo) */
+function nhModal(html, buttons) {
+  try {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(6,8,16,.86);z-index:99998;display:flex;align-items:center;justify-content:center;padding:16px';
+    ov.innerHTML = '<div style="max-width:600px;width:100%;max-height:88vh;overflow:auto;background:#0f1424;border:1px solid #33406b;border-radius:16px;padding:16px 18px;color:#eef2ff;box-shadow:0 18px 60px rgba(0,0,0,.55);font-family:system-ui,-apple-system,sans-serif">' +
+      html + '<div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap" data-btns></div></div>';
+    var bb = ov.querySelector('[data-btns]');
+    (buttons || []).forEach(function (b, i) {
+      var el = document.createElement('button');
+      el.innerHTML = b.label || 'OK';
+      el.style.cssText = (b.ghost ? 'background:#1b2138;color:#cfd8ff;border:1px solid #2c3760;' : 'background:#f5c451;color:#161307;border:0;') + 'border-radius:10px;padding:9px 16px;font:800 13px system-ui;cursor:pointer';
+      el.onclick = function () { ov.remove(); if (b.cb) b.cb(); };
+      bb.appendChild(el);
+    });
+    document.body.appendChild(ov);
+    return ov;
+  } catch (e) { return null; }
+}
 function dialog(title, body, cb) {
   if (popBusy) { setTimeout(function () { dialog(title, body, cb); }, 450); return; }
   popBusy = true;
-  try {
-    if (typeof GameDialog !== 'undefined' && GameDialog.show) {
-      GameDialog.show('📰 NEWS HUB — ' + title + '<div style="margin-top:8px;color:#c7d3ea;font-size:.92rem">' + body + '</div>', [{ label: 'Leído porque soy el patrón 📰', cb: function () { popBusy = false; if (cb) cb(); } }]);
-      return;
-    }
-  } catch (e) {}
-  try {
-    var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(6,8,16,.82);z-index:99998;display:flex;align-items:center;justify-content:center;padding:18px';
-    ov.innerHTML = '<div style="max-width:520px;background:#0f1424;border:1px solid #33406b;border-radius:16px;padding:18px;color:#eef2ff;box-shadow:0 18px 60px rgba(0,0,0,.5);font-family:system-ui">' +
-      '<div style="font:800 15px system-ui;margin-bottom:8px">📰 NEWS HUB</div>' +
+  nhModal('<div style="font:800 15px system-ui;margin-bottom:8px">📰 NEWS HUB</div>' +
       '<div style="font-weight:800;color:#f5c451;margin-bottom:6px">' + esc(title) + '</div>' +
-      '<div style="color:#c7d3ea;font-size:.92rem;line-height:1.45">' + esc(body) + '</div>' +
-      '<div style="margin-top:14px;text-align:center"><button id="nh-ok" style="background:#f5c451;color:#161307;border:0;border-radius:10px;padding:9px 16px;font:800 13px system-ui;cursor:pointer">Entendido 📰</button></div></div>';
-    document.body.appendChild(ov);
-    ov.querySelector('#nh-ok').onclick = function () { ov.remove(); popBusy = false; if (cb) cb(); };
-  } catch (e2) { popBusy = false; }
+      '<div style="color:#c7d3ea;font-size:.92rem;line-height:1.45">' + esc(body) + '</div>',
+    [{ label: 'Leído porque soy el patrón 📰', cb: function () { popBusy = false; if (cb) cb(); } }]);
 }
 
 /* ════ API ════ */
@@ -476,15 +482,13 @@ var API = {
         return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin:4px 0;background:#101731;border:1px solid #2c3760;border-radius:10px;cursor:pointer">' +
           '<input type="checkbox" class="nh-lg" data-k="' + L.k + '"' + (pre ? ' checked' : '') + '> <b>' + L.n + '</b><span style="color:#7b87ad;font-size:.75rem"> · ' + L.clubes.slice(0, 3).join(' · ') + '…</span></label>';
       }).join('');
+    if (document.getElementById('nh-chooser-ov')) return;   /* 🛡️ no apilar redacciones */
     var done = function () {
       var cols = []; document.querySelectorAll('.nh-lg').forEach(function (c) { if (c.checked && cols.length < 5) cols.push(c.getAttribute('data-k')); });
       API.setLeagues(s, cols); if (cb) cb();
     };
-    if (typeof GameDialog !== 'undefined' && GameDialog.show && mode === 'mgr') {
-      GameDialog.show(h, [{ label: 'Guardar mi redacción ✍️', cb: done }]);
-    } else {
-      try { UI.modal(h, [{ t: 'Guardar mi redacción ✍️', c: 'btn', fn: done }]); } catch (e) { done(); }
-    }
+    var ovm = nhModal(h, [{ label: 'Guardar mi redacción ✍️', cb: done }]);
+    if (ovm) ovm.id = 'nh-chooser-ov'; else done();
   },
   render: function (mode, s) {
     var hub = ensure(s); if (!hub) return;
