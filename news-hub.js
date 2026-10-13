@@ -479,6 +479,7 @@ var API = {
   /* ── UI pantalla ── */
   open: function (mode, s) {
     var hub = ensure(s); if (!hub) return;
+    try { if (mode === 'mgr' && typeof Dashboard !== 'undefined' && Dashboard.switchTab) { if (window.__nhEnsureMgrTab) window.__nhEnsureMgrTab(); try { Dashboard.switchTab('newshub'); } catch (e0) {} } } catch (e1) {}
     if (!hub.chosen) { API.chooser(mode, s, function () { API.render(mode, s); }); return; }
     API.render(mode, s);
   },
@@ -529,12 +530,55 @@ var API = {
   }
 };
 window.NEWSHUB = API;
+window.__nhEnsureMgrTab = null; /* la asigna wireLater */
 
 /* ════════════ AUTOENGANCHE ════════════ */
 (function wireLater() {
   function decide(s) { return s && s.newsHub ? s : null; }
+  /* 🛡️ AUTOSUFICIENCIA: si el HTML del mánager está cacheado y la pestaña no existe, se INYECTA */
+  function nhEnsureMgrTab() {
+    try {
+      if (typeof Dashboard === 'undefined') return;
+      if (document.querySelector('[data-tab="newshub"]')) { nhPatchSwitchTab(); return; }
+      var side = document.querySelector('.fc27-side'), top = document.querySelector('.fc27-topbar');
+      var main = document.querySelector('.fc27-main');
+      if (main && !document.getElementById('tab-newshub'))
+        main.insertAdjacentHTML('afterbegin', '<div id="tab-newshub" class="hidden"><section class="fc27-card"><h3 class="fc27-h">📰 NEWS HUB — la portada del mundo</h3><div id="newshub-body"></div></section></div>');
+      if (side) {
+        var sys = side.querySelector('[data-tab="system"]');
+        var btn = '<button class="pes-tab fc27-item" data-tab="newshub" onclick="Dashboard.switchTab(\'newshub\')" style="outline:1px solid rgba(245,196,81,.45)"><i>📰</i><span>News Hub</span></button>';
+        if (sys) sys.insertAdjacentHTML('afterend', btn); else side.insertAdjacentHTML('afterbegin', btn);
+      }
+      if (top && !top.querySelector('[data-tab="newshub"]')) {
+        var sys2 = top.querySelector('[data-tab="system"]');
+        var btn2 = '<button class="pes-tab fc27-topitem" data-tab="newshub" onclick="Dashboard.switchTab(\'newshub\')" style="border-color:rgba(245,196,81,.5)">📰 News Hub</button>';
+        if (sys2) sys2.insertAdjacentHTML('afterend', btn2);
+      }
+      nhPatchSwitchTab();
+    } catch (e) {}
+  }
+  function nhPatchSwitchTab() {
+    if (Dashboard.switchTab._nh) return;
+    var _stb = Dashboard.switchTab;
+    var f = function (tab) {
+      if (tab === 'newshub') {
+        document.querySelectorAll('.pes-tab').forEach(function (t) { t.classList.remove('active'); });
+        document.querySelectorAll('.pes-tab[data-tab="newshub"]').forEach(function (t) { t.classList.add('active'); });
+        ['home','partidos','squad','youth','starting-xi','transfer','tactics','database','cups','system','newshub'].forEach(function (t) {
+          var el = document.getElementById('tab-' + t); if (el) el.classList.toggle('hidden', t !== 'newshub');
+        });
+        try { API.render('mgr', ManagerCareer.state); } catch (e) {}
+        return;
+      }
+      return _stb.apply(this, arguments);
+    };
+    f._nh = true; Dashboard.switchTab = f;
+  }
+  window.__nhEnsureMgrTab = nhEnsureMgrTab;
   document.addEventListener('DOMContentLoaded', function () {
     try {
+      setTimeout(nhEnsureMgrTab, 600); setTimeout(nhEnsureMgrTab, 2500);
+      try { nhEnsureMgrTab(); } catch (e0) {}
       /* Manager: noticias al sumar jornada + 🎙️ rueda de prensa cada 3 jornadas o más */
       if (typeof ManagerCareer !== 'undefined' && ManagerCareer.playNextMatch && !ManagerCareer.playNextMatch._nh) {
         var _op = ManagerCareer.playNextMatch.bind(ManagerCareer);
