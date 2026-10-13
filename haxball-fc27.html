@@ -335,7 +335,7 @@ body.touch #ctrl .kb{display:none}
   </div>
 </div>
 <div id="ctrl"><span class="kb"><kbd>WASD</kbd>/<kbd>◀▲▼▶</kbd> mover · <kbd>ESPACIO</kbd>/<kbd>J</kbd> pase · entrada · <kbd>L</kbd>/<kbd>X</kbd> al hueco · centro · <kbd>C</kbd> CAMBIO de jugador · <kbd>K</kbd> disparo (toque = colocado ✋ · mantén = cañonazo 🚀) · <kbd>SHIFT</kbd> ⚡SPRINT (mantén) · <kbd>Q</kbd>/<kbd>E</kbd> rizado · <kbd>↑↓</kbd> en vuelo = ¡doblarla! 🌀 · <kbd>ESC</kbd> pausa · <kbd>M</kbd> silencio</span><br><span id="tsup" style="display:none">Joystick mueve · verde = pase/entrada · 💙 azul = al hueco/centro con balón · CAMBIO sin ella · 🔄 cian = CAMBIO de jugador cuando defiendes · roja = disparo (toque = colocado ✋ · mantén = cañonazo) · amarilla ⚡ = SPRINT (gasta energía) · inclina el stick = rizado, ¡también en vuelo! 🌀</span></div>
-<div id="taca">FC27 Arcade · 11v11 · v4.1.2 • 12-oct 🏁</div>
+<div id="taca">FC27 Arcade · 11v11 · v4.1.3 • 12-oct 🕵️</div>
 <script>
 /* ╔═══════════════ HAXBALL 11v11 · FC27 · v0.3 ═══════════════╗
    tocar = poseer · solo se suelta: entrada / pase / tiro
@@ -778,6 +778,7 @@ function newMatch(xiPicks){
  S.owner=null;S.ctrlP=null;S.scores=[0,0];S.goalLog=[];S.cmts=[];
  S.stats={pos:[0,0],shots:[0,0],rob:[0,0],pt:[0,0],po:[0,0],fl:[0,0],sv:[0,0],cd:[[0,0],[0,0]]};   /* 🎮 el marcador manual también sale del vestuario limpio */
  S.setPc=null;S.penTtl=0;S.kick=null;S.corTtl=0;S.htDone=false;
+ S.rp=null;document.getElementById('rpUI').classList.remove('on');document.body.classList.remove('comp-rp');   /* 📺 la tele del gol anterior no se cuela al partido nuevo */
  const htp=document.getElementById('ht');if(htp)htp.classList.remove('on');
  const htb=document.getElementById('htBody');if(htb)htb.classList.remove('on');
  resetClock();S.shake=0;shootOn=false;makeFans();
@@ -806,7 +807,9 @@ function newKickoff(kickTeam){
  S.rec.length=0;S.recT=0;                                   /* 📺 nuevo saque, cinta nueva */
  S.cel=null;                                                /* 🎉 festejo terminado */
  S.owner=null;
- const k=S.players.find(p=>p.team===kickTeam&&p.idx===0);
+ /* 🟥 si tu punta de siempre purga su roja en el vestuario, el saque lo abre el delantero vivo más al frente */
+ let k=S.players.find(p=>p.team===kickTeam&&p.idx!==GKIDX&&p.idx<3&&(!S.outR||!S.outR.has(p.cr)));
+ if(!k)k=S.players.find(p=>p.team===kickTeam&&p.idx!==GKIDX&&(!S.outR||!S.outR.has(p.cr)));
  if(k){S.owner=k;k.hasBall=true;S.kick={t:.85,grace:1.5,kicker:k,fired:false};}
 }
 
@@ -857,7 +860,7 @@ addEventListener('keyup',e=>{
 });
 function togglePause(){
  if(S.st==='play'){S.st='pause';showBanner('PAUSA ⏸','ESC para seguir');SFX.ui();}
- else if(S.st==='pause'){S.st='play';hideBanner();SFX.ui();}
+ else if(S.st==='pause'){S._rotP=0;S.st='play';hideBanner();SFX.ui();}   /* tu ESC manda: la autopausa queda anulada */
 }
 /* táctil */
 const stick=document.getElementById('stick'),knob=document.getElementById('knob');
@@ -877,12 +880,12 @@ function chkOrient(){
  const enJuego=S.st==='play'||S.st==='pause'||S.st==='goal';
  if(mal&&enJuego){
   h.classList.add('on');
-  if(S.st==='play'){S.st='pause';}         /* pausa automática: gira para seguir */
+  if(S.st==='play'){S.st='pause';S._rotP=1;}         /* pausa automática: gira para seguir (ella marca SU pausa) */
   S._rotH=1;
  }else{
   if(S._rotH){
    S._rotH=0;
-   if(S.st==='pause'){S.st='play';hideBanner();}
+   if(S.st==='pause'&&S._rotP){S._rotP=0;S.st='play';hideBanner();}   /* solo reanuda si ELLA pausó; tu pausa es tuya */
   }
   h.classList.remove('on');
  }
@@ -1213,6 +1216,11 @@ function cornerCross(p){
  passEmit(p);b.cross=true;   /* 🎯 el colgado se FIRMA como centro tras contabilizar el envío */
  SFX.pass();flashTaunt('¡'+p.n+' la cuelga al área! 🎯');comment('🎯 ¡'+p.n+' la CUELGA al corazón del área!');
 }
+let _acK='',_acV=0;
+function aimCurveGuided(p,spd,curl,ty){            /* 🌀 guía idéntica, pero memorizada: celulares felices */
+ const k=Math.round(p.x/8)+','+Math.round(p.y/8)+','+Math.round(spd/40)+','+curl.toFixed(2)+','+ty;
+ if(k===_acK)return _acV;_acV=aimCurve(p,spd,curl,ty);_acK=k;return _acV;
+}
 let tauntEl=null;
 function flashTaunt(txt){
  if(!POP)return;                                              /* 🔕 el míster apagó los avisos */
@@ -1300,6 +1308,7 @@ function computePress(){
    let b1=null,b2=null,d1=1e9,d2=1e9;
    S.players.forEach(q=>{
      if(q.team!==t||q.idx===GKIDX)return;
+     if(S.outR&&S.outR.has(q.cr))return;                  /* 🟥 expulsado no presiona ni sombrea: está en el vestuario */
      const d=dist(q,b);
      if(d<d1){d2=d1;b2=b1;d1=d;b1=q;}
      else if(d<d2){d2=d;b2=q;}
@@ -2244,7 +2253,7 @@ function draw(){
   const lat=((keys.w||keys.ArrowUp?-1:0)+(keys.s||keys.ArrowDown?1:0))+stickVec.y;
   const curlIn=qe||clamp(lat,-1,1);
   const crl=Math.abs(curlIn)>.2?clamp(curlIn,-1,1)*1.05*(0.45+pwr*.55)*((p.dri||70)>88?1.15:1):0;
-  const a=crl?aimCurve(p,spd,crl,CTRY+(p.y<CTRY?34:-34)):ang(p,{x:gx,y:CTRY});   /* la guía muestra el tiro REAL compensado */
+  const a=crl?aimCurveGuided(p,spd,crl,CTRY+(p.y<CTRY?34:-34)):ang(p,{x:gx,y:CTRY});   /* la guía muestra el tiro REAL compensado */
   let px=p.x+Math.cos(a)*(p.r+9),py=p.y+Math.sin(a)*(p.r+9);
   let vx=Math.cos(a)*spd,vy=Math.sin(a)*spd;
   cx.setLineDash([3,7]);cx.strokeStyle='rgba(255,255,255,.55)';cx.lineWidth=2;
