@@ -2332,6 +2332,11 @@ input[type="range"]{accent-color:#00ff87}
                             <button class="btn-primary fc27-block" onclick="ManagerCareer.playNextMatch()">▶ Jugar</button>
                             <button class="btn-primary fc27-block" onclick="FC27Bridge.launch()" style="background:#f5c451;color:#161307;margin-top:6px">🎮 Jugar en cancha</button>
                         </section>
+                        <section class="fc27-card" id="nh-home-card">
+                            <h3 class="fc27-h">📰 NEWS HUB — la portada de hoy</h3>
+                            <div id="nh-home-feed"><div class="fc27-dim">La redacción abre en la primera jornada… 📰</div></div>
+                            <button class="btn-ghost fc27-block" style="margin-top:8px" onclick="Dashboard.switchTab('newshub')">Abrir la redacción completa →</button>
+                        </section>
                         <section class="fc27-card">
                             <h3 class="fc27-h">Clasificación</h3>
                             <div id="standings-list"></div>
@@ -12152,6 +12157,7 @@ Dashboard.switchTab = function(tab) {
     if (tab === 'database') this.renderDatabase();
     if (tab === 'cups') this.renderCups();
     if (tab === 'newshub') { try { if (typeof NEWSHUB !== 'undefined') NEWSHUB.render('mgr', ManagerCareer.state); } catch (eNH) {} }
+    if (tab === 'home') { try { if (typeof NEWSHUB !== 'undefined') NEWSHUB.renderHomeCard(ManagerCareer.state); } catch (eHC) {} }
     if (tab === 'system') this.renderCareerSummary();
     window.scrollTo(0, 0);
 };

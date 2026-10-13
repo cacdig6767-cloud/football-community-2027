@@ -366,6 +366,7 @@ var API = {
         if (!wantMine && wantWorld) hub.cd = 2;
         dialog(it.title, it.body);
       }
+      try { if (mode === 'mgr') API.renderHomeCard(s); } catch (e) {}
     });
   },
   rumorLive: function (s) {
@@ -463,6 +464,15 @@ var API = {
       };
       ask(0);
     } catch (e) {}
+  },
+  renderHomeCard: function (s) {
+    var hub = ensure(s), el = document.getElementById('nh-home-feed');
+    if (!el || !hub) return;
+    var h3 = hub.feed.slice(0, 3);
+    el.innerHTML = h3.length ? h3.map(function (it) {
+      return '<div style="padding:6px 0;border-bottom:1px dashed #2c3760"><div style="font-weight:700;font-size:.84rem">' + esc(it.title) + '</div>' +
+        '<div style="color:#7b87ad;font-size:.74rem">' + esc((it.body || '').slice(0, 110)) + '…</div></div>';
+    }).join('') : '<div class="fc27-dim">La redacción abre en la primera jornada… 📰</div>';
   },
   togglePopups: function (s, on) { var hub = ensure(s); if (hub) hub.popups = !!on; },
   setLeagues: function (s, arr) { var hub = ensure(s); if (!hub) return; hub.leagues = (arr || []).slice(0, 5); hub.chosen = true; },
