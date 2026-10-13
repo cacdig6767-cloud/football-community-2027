@@ -258,7 +258,9 @@ body.touch #ctrl .kb{display:none}
       <button class="bbtn2" id="btnRematch">REINICIAR PARTIDO ↻</button>
       <button class="bbtn2 ghost" id="btnTeams">CAMBIAR EQUIPOS</button>
       <button class="bbtn2 ghost" id="btnExit">SALIR DEL PARTIDO ✕</button>
-      <button class="bbtn2" id="btnEt" style="display:none;background:#f5c451;color:#161307;border-color:#f5c451">⏱️ A TIEMPO EXTRA + PENALES</button>
+      <button class="bbtn2" id="btnPen" style="display:none;background:#e879f9;color:#2b1033;border-color:#e879f9">🥅 DIRECTO A LA TANDA</button>
+      <button class="bbtn2" id="btnGold" style="display:none;background:#a3e635;color:#12210b;border-color:#a3e635">🥇 GOL DE ORO</button>
+      <button class="bbtn2" id="btnEt" style="display:none;background:#f5c451;color:#161307;border-color:#f5c451">⏱️ CLÁSICO: PRÓRROGA + PENALES</button>
     </div>
   </div>
   <div id="chargewrap"><div id="charge"></div></div>
@@ -378,6 +380,25 @@ const COMP=(()=>{const k=_dq.get('comp'),t=COMPS[k];if(!t)return null;
  const x=_dq.get('compx');return Object.assign({},t,{key:k,label:(x&&x.trim())?x.trim().toUpperCase():t.name});})();
 /* 🏁 CLAUSURA: la competencia ordenó "esta llave NO acepta empates" (16avos+, vuelta, finales) */
 const MUSTWIN=(_dq.get('mustWin')==='1'||_dq.get('mustWin')==='si');
+/* ⚡ PARTIDO RÁPIDO: la casa QR también puede regir la cancha */
+const SIDE=(()=>{const n=(+(_dq.get('n')||0)|0);return(n>=1&&n<=9)?n:10;})();   /* juego por equipo (sin arquero) */
+const FUTSAL=_dq.get('futsal')==='1';
+const WALLS=_dq.get('walls')==='1';                                        /* paredes con rebote vivo */
+const GG=_dq.get('gg')==='1'||FUTSAL;                                      /* 🥇 gol de oro */
+const RULES=_dq.get('rules')||'normal';                                    /* 'normal' | 'none'(sin reglas) | 'x2'(lejanos x2) */
+const MT=(+(_dq.get('mt')||0)|0);                                          /* segundos por parte (QR/ajustes) */
+const MUSTRK=_dq.get('music')||'';                                         /* 'larueda': ambientación FutSal */
+const TIE=_dq.get('tie')||'';                                              /* desempate amistoso pre-elegido: pen|et|gg|draw */
+const STAD=_dq.get('stad')||'';
+const ARENA=_dq.get('arena')||'';
+/* 🎨 pieles de sede: 6 estadios 11v11 + 6 arenas FutSal (color de superficie) */
+const SURF={
+ azteca:['#0b6d33','#085526'], maracan:['#0d7f3e','#096329'], wembley:['#0a6b3b','#064f29'],
+ bernabu:['#0f8440','#0b6a2f'], campnou:['#0a6f33','#065c26'], oasis:['#0d7a45','#0a5e31'],
+ parque:['#4a8f3c','#3e7a31'], playa:['#e8c983','#d9b271'], concreto:['#1d4ed8','#163a97'],
+ favela:['#8a5a3b','#6e462e'], pro:['#7c5a2e','#5f4423'], escolar:['#0e7490','#155e75']
+};
+const SURFK=(ARENA&&SURF[ARENA])?ARENA:((STAD&&SURF[STAD])?STAD:'');
 
 /* 🎛️ MANDO A TU GUSTO (Ajustes del menú): lado del pad, tamaño de botones y pop-ups del partido.
    Sin padrinos en URL: todo EXACTAMENTE como siempre. */
@@ -594,7 +615,23 @@ const FRMH=[[462,280],[430,135],[430,425],
             [330,150],[330,280],[330,410],
             [180,105],[180,225],[180,345],[180,465]];
 const FRM=[FRMH,FRMH.map(s=>[W-s[0],s[1]])];
-const GKX=[FIELD.x+24,FIELD.x+FIELD.w-24];
+let GKX=[FIELD.x+24,FIELD.x+FIELD.w-24];
+/* 🏟️ ARENAS PEQUEÑAS (FutSal): el rectángulo se achica pero el balón sigue vivo */
+function arenaSMALL(){
+ const sc=(FUTSAL&&SIDE<=4)?0.50:0.62;
+ FIELD.w=Math.round(660*sc*1.55); FIELD.h=Math.round(492*sc*1.06);
+ FIELD.x=Math.round(W/2-FIELD.w/2); FIELD.y=Math.round(H/2-FIELD.h/2);
+ GKX=[FIELD.x+20,FIELD.x+FIELD.w-20];
+ GOAL.h=FUTSAL?96:GOAL.h;
+}
+/* 🧩 dibujo para pocos: jugosa geometría de barrio (porcentajes del rectángulo) */
+function spotsN(n){
+ const R=(fx,fy)=>[FIELD.x+fx*FIELD.w,FIELD.y+fy*FIELD.h];
+ if(n<=1)return[R(.62,.5)];
+ if(n===2)return[R(.44,.34),R(.60,.62)];
+ if(n===3)return[R(.36,.5),R(.56,.28),R(.56,.72)];
+ return[R(.34,.5),R(.52,.26),R(.52,.74),R(.70,.5)];
+}
 /* 📏 la cancha creció (1000→1180): los dibujos viejos se estiran al centro nuevo conservando forma */
 const _mx=x=>Math.round((x-500)*(1180/1000)+590);
 for(let _i=0;_i<FRMH.length;_i++)FRMH[_i][0]=_mx(FRMH[_i][0]);
@@ -609,7 +646,9 @@ const FORMS={
  '4-1-4-1':{d:'Pivote sereno',spots:[[468,280],[360,105],[360,225],[360,345],[360,465],[270,280],[180,105],[180,225],[180,345],[180,465]]}
 };
 function formCpuPick(){const ks=Object.keys(FORMS);return ks[(Math.random()*ks.length)|0];}
-function frmBuild(){const a=(FORMS[S.formH]||FORMS['4-3-3']).spots,b=(FORMS[S.formA]||FORMS['4-3-3']).spots;S.FRM=[a,b.map(s=>[W-s[0],s[1]])];}
+function frmBuild(){
+ if(SIDE<10){const a=spotsN(SIDE);S.FRM=[a,a.map(s=>[W-s[0],s[1]])];return;}                    /* ⚡ pocos vs pocos, dibujo corto */
+ const a=(FORMS[S.formH]||FORMS['4-3-3']).spots,b=(FORMS[S.formA]||FORMS['4-3-3']).spots;S.FRM=[a,b.map(s=>[W-s[0],s[1]])];}
 
 /* ── estado ── */
 const S={players:[],ball:null,owner:null,press:[null,null],cover:[null,null],ctrlP:null,scores:[0,0],tLeft:120,matchT:120,
@@ -766,11 +805,12 @@ function htSwap(zone,slot,el){
 function newMatch(xiPicks){
  S.players.length=0;S.fx.length=0;
  S.xiH=xiPicks.slice();
- const xiH=picksToXi(xiPicks);
+ const xiH=picksToXi(xiPicks).slice(0,Math.min(SIDE,10));
  S.xiOrd=xiH.slice();                                     /* orden de casillas para ajustes en el entretiempo */
  S.benchH=ROSTER.map((c,i)=>i).filter(i=>!xiPicks.includes(i));   /* 3 al banquillo */
  const awayPool=(S.__awayRoster&&S.__awayRoster.length>=10)?S.__awayRoster:ROSTER;
- const xiA=awayPool.map((c,i)=>i).sort((a,b)=>awayPool[b].r-awayPool[a].r).slice(0,10);
+ const TAKE=Math.min(SIDE,10);
+ const xiA=awayPool.map((c,i)=>i).sort((a,b)=>awayPool[b].r-awayPool[a].r).slice(0,TAKE);
  S.formA=formCpuPick();frmBuild();                                   /* 🧩 la CPU también sale del vestuario con SU dibujo */
  const FX=S.FRM;
  xiH.forEach((ri,idx)=>{const sp=FX[0][idx];const pl=mk(ROSTER[ri],0,sp[0],sp[1],idx);pl.cr=ri;S.players.push(pl);});
@@ -787,7 +827,9 @@ function newMatch(xiPicks){
  const _betN=document.getElementById('btnEt');if(_betN)_betN.style.display='none';
  const htp=document.getElementById('ht');if(htp)htp.classList.remove('on');
  const htb=document.getElementById('htBody');if(htb)htb.classList.remove('on');
+ if(MT>0)S.matchT=MT*2;                                                        /* ⏱️ duración de la casa (2–5' por parte) */
  resetClock();S.shake=0;shootOn=false;makeFans();
+ arenaMusic(true);
  sampAmbient();                                       /* 🏟️ la grada ruge desde el pitazo inicial */
  document.getElementById('sHome').textContent=0;document.getElementById('sAway').textContent=0;
  const tn=document.getElementById('tName'),ta=document.getElementById('tNameA');
@@ -1057,7 +1099,7 @@ function cpuShootCorner(p){
  if(crl)aim=aimCurve(p,spd,crl,CTRY+(gkY<=CTRY?40:-40))+(Math.random()-.5)*.08*finE;   /* …y la compensa: también enmarca */
  b.x=p.x+Math.cos(aim)*(p.r+11);b.y=p.y+Math.sin(aim)*(p.r+11);
  b.vx=Math.cos(aim)*spd;b.vy=Math.sin(aim)*spd;
- b.passTo=null;b.freeT=.14;b.lastShooter=p;b.hot=spd>840;S.owner=null;p.hasBall=false;b.cross=false;
+ b.passTo=null;b.freeT=.14;b.lastShooter=p;b.shAt=p.x;b.hot=spd>840;S.owner=null;p.hasBall=false;b.cross=false;
  b.curl=crl;b.lastPass=null;
  p.fx.t++;S.stats.shots[p.team]++;SFX.kick();
  flashTaunt('¡'+p.n+' remata! 🎯');comment('🎤 ¡'+p.n+' remata hacia el arco!');
@@ -1160,10 +1202,11 @@ function maybeFoul(tk,vic){
                 :(vic.x>FIELD.x+FIELD.w-120&&Math.abs(vic.y-CTRY)<120);
  const r=Math.random();
  let foul=false;
- if(inBox&&r<.5){setPiece('pen',vic.team,{x:left?FIELD.x+88:FIELD.x+FIELD.w-88,y:CTRY},vic);foul=true;}
- else if(!inBox&&r<.3){setPiece('fk',vic.team,{x:clamp(vic.x,FIELD.x+34,FIELD.x+FIELD.w-34),y:clamp(vic.y,FIELD.y+26,FIELD.y+FIELD.h-26)},vic);foul=true;}
+ if(RULES!=='none'&&inBox&&r<.5){setPiece('pen',vic.team,{x:left?FIELD.x+88:FIELD.x+FIELD.w-88,y:CTRY},vic);foul=true;}
+ else if(RULES!=='none'&&!inBox&&r<.3){setPiece('fk',vic.team,{x:clamp(vic.x,FIELD.x+34,FIELD.x+FIELD.w-34),y:clamp(vic.y,FIELD.y+26,FIELD.y+FIELD.h-26)},vic);foul=true;}
  /* 😤 LA GRADA PROTESTA */
- if(foul&&S.crowd){S.crowd.booT=Math.max(S.crowd.booT,1.3);SFX.boo(false);}
+ if(foul&&RULES!=='none'&&S.crowd){S.crowd.booT=Math.max(S.crowd.booT,1.3);SFX.boo(false);}
+ if(RULES==='none')foul=false;                                          /* ⛔ SIN REGLAS: no hay silbato ni tarjeta */
  if(foul){tk.fx.fo++;S.stats.fl[tk.team]++;vic.fallT=.95;vic.stun=Math.max(vic.stun||0,.3);comment('⚠ Falta de '+tk.n+' sobre '+vic.n+'. Bola parada.');}              /* 📊 al varapalo también se le cuenta · 🤕 la víctima rueda */
  /* 🟨 tarjetas: doble amarilla = ROJA y 10 vs 11 🟥 */
  if(foul&&tk.idx!==GKIDX&&S.outR&&!S.outR.has(tk.cr)&&tk.cr!=null&&Math.random()<.45){
@@ -1188,6 +1231,10 @@ function corner(team,yb){
  setPiece('cor',team,{x,y},null);
 }
 function banda(b){
+ if(WALLS){                                                              /* 🧱 pared viva: el balón regresa jugando */
+  b.x=clamp(b.x,FIELD.x+8,FIELD.x+FIELD.w-8); b.vx=-b.vx*.78; b.curl=0; b.curlT=0; S.owner=null;
+  SFX.boot();return;
+ }
  if(S.pens){if(S.pens.arm){pensMiss('¡A LA TRIBUNA! ☁️');}return;}      /* 🥅 en la tanda no hay saque de banda: fallaste */
  /* línea lateral: cobra el equipo que NO tocó último (como la regla FIFA) */
  if(S.setPc)return;
@@ -1197,6 +1244,10 @@ function banda(b){
  setPiece('th',team,{x:clamp(b.x,FIELD.x+26,FIELD.x+FIELD.w-26),y:brkY?FIELD.y+8:FIELD.y+FIELD.h-8},null);
 }
 function deadBall(atkTeam,b){
+ if(WALLS){                                                              /* 🧱 línea de fondo con muro: vuelve */
+  b.y=clamp(b.y,FIELD.y+8,FIELD.y+FIELD.h-8); b.vy=-b.vy*.78; b.curl=0; b.curlT=0; S.owner=null;
+  SFX.boot();return;
+ }
  if(S.pens){if(S.pens.arm){pensMiss('¡DESVIADA! 🚫');}return;}          /* 🥅 en la tanda no hay córner ni meta: fallaste */
  /* ley del toque final: si la sacó el ATACANTE → meta para la defensa */
  const defT=1-atkTeam;
@@ -1300,7 +1351,7 @@ function releaseShoot(){
  }
  S.ball.x=p.x+Math.cos(aim)*(p.r+9);S.ball.y=p.y+Math.sin(aim)*(p.r+9);
  S.ball.vx=Math.cos(aim)*spd;S.ball.vy=Math.sin(aim)*spd;
- S.ball.passTo=null;S.ball.freeT=.14;S.ball.lastShooter=p;S.ball.hot=spd>800;S.owner=null;p.hasBall=false;S.ball.cross=false;
+ S.ball.passTo=null;S.ball.freeT=.14;S.ball.lastShooter=p;S.ball.shAt=p.x;S.ball.hot=spd>800;S.owner=null;p.hasBall=false;S.ball.cross=false;
  S.ball.curl=crl;
  S.ball.curlT=1.6;                                  /* aftertouch: dóblala en vuelo */
  S.ball.lastPass=null;S.stats.shots[p.team]++;p.fx.t++;
@@ -1328,7 +1379,7 @@ function computePress(){
    todo nace de LA FORMACIÓN del míster (orientación del plano: atacar a la derecha) ── */
 const TAC={supp:[null,null],runT:[1.8,2.8]};
 function roleFront(t){                                           /* índices de la FILA DE ARRIBA según el dibujo de ESE equipo */
- const sp=(FORMS[t===0?S.formH:S.formA]||FORMS['4-3-3']).spots;
+ const sp=(SIDE<10)?S.FRM[t]:(FORMS[t===0?S.formH:S.formA]||FORMS['4-3-3']).spots;
  const out=[];for(let i=0;i<10;i++)if(sp[i][0]>=390)out.push(i);return out;
 }
 function tacSpot(p,phase){                                       /* la posición piensa en el contexto */
@@ -1814,7 +1865,7 @@ function tryHead(p){
  const spd=560+Math.random()*180+(p.tir||70)*1.2;
  b.x=p.x+Math.cos(a+err)*(p.r+7);b.y=p.y+Math.sin(a+err)*(p.r+7);
  b.vx=Math.cos(a+err)*spd;b.vy=Math.sin(a+err)*spd;
- b.passTo=null;b.cross=false;b.hot=true;b.freeT=.16;b.lastShooter=p;b.lastPass=null;S.owner=null;p.hasBall=false;
+ b.passTo=null;b.cross=false;b.hot=true;b.freeT=.16;b.lastShooter=p;b.shAt=p.x;b.lastPass=null;S.owner=null;p.hasBall=false;
  S.stats.shots[p.team]++;p.fx.t++;
  SFX.kick();S.shake=Math.max(S.shake,2);
  spawnFx(p.x,p.y-p.r,'#ffffff',5,70);
@@ -1984,6 +2035,19 @@ function resumeAfterGoal(){
 }
 function gol(team,scorer){
  if(S.pens){if(S.pens.arm){pensHit();}return;}                          /* 🥅 en la tanda: cuenta y tira el que sigue, sin fiesta */
+ if(S.ggOn){                                                             /* 🥇 GOL DE ORO: la primera diana de la muerte es final */
+  S.scores[team]++;
+  arenaGoalBump();
+  flashTaunt('🥇 ¡GOL DE ORO! '+scorer.n+' dictamina el destino 🌟');
+  S.st='goal';S.shake=Math.max(S.shake,10);
+  setTimeout(()=>{endMatch();},2300);
+  return;
+ }
+ if(RULES==='x2'&&S.ball&&S.ball.shAt!=null){                            /* 💥 lejanos valen doble */
+  const farAway=team? (S.ball.shAt>FIELD.x+160) : (S.ball.shAt<FIELD.x+FIELD.w-160);
+  if(farAway){S.scores[team]++;flashTaunt('💥 ¡BOMBAZO EXTERNO! VALE x2 🔥🔥');S.ball.shAt=null;}
+ }
+ arenaGoalBump();
  S.scores[team]++;
  /* 📊 al acta: goleador, minuto del reloj y el PASE DE GOL si hay quién lo inventó */
  let asis=null;
@@ -2016,12 +2080,15 @@ function gol(team,scorer){
 function onFinalWhistle(){
  if(S.st==='over')return;
  const tie=S.scores[0]===S.scores[1];
- if(S.et===0&&tie&&S.etNeed){startExtraTime();return;}                /* final reglamentario empatado y la llave exige dueño */
+ if(S.et===0&&tie&&(S.etNeed||GG||TIE==='gg')){startExtraTime();return;}   /* 🏁 dueño o muerte súbita: hay más guerra */
+ if(S.et===0&&tie&&TIE==='pen'){startPens();return;}
  if(S.et>=1&&S.et<=2&&tie){startPens();return;}                       /* la prórroga tampoco desempató: 🥅 once pasos */
  endMatch();
 }
 function startExtraTime(){
  S.et=1;S.etL=Math.max(8,S.matchT/6);S.overtime=true;S.addT=[0,0];     /* sin agregado en la prórroga */
+ S.ggOn=(TIE==='gg'||GG||S._ggWant===true);                            /* 🥇 regla de muerte súbita si la ordenó la casa */
+ S._ggWant=false;
  S.tLeft=S.etL;S._pT=null;S.st='play';
  S.players.forEach(q=>{q.sta=Math.min(100,(q.sta==null?100:q.sta)+10);if(q.sta>20)q.gassed=false;});   /* 🍊 aire para la guerra */
  SFX.whistle(1);
@@ -2103,6 +2170,18 @@ function pensFinish(){
  flashTaunt('🏆 '+gn+' avanza por penales ('+P.sh+'-'+P.sa+')');
  setTimeout(()=>{endMatch();},2600);
 }
+/* 🎧 AMBIENTACIÓN DE ARENA (FutSal): La Rueda de fondo; en los goles ruge junto a la grada */
+function arenaMusic(on){
+ if(!MUSTRK){return;}
+ try{
+  if(!S._arenaA){const au=new Audio('assets/music/09-la-rueda.mp3');au.loop=true;au.volume=.16;S._arenaA=au;}
+  if(on){S._arenaA.play().catch(()=>{});}else if(S._arenaA){S._arenaA.pause();}
+ }catch(e){}
+}
+function arenaGoalBump(){
+ if(!S._arenaA)return;
+ try{S._arenaA.volume=.9;setTimeout(()=>{try{if(S._arenaA)S._arenaA.volume=.16;}catch(e){}},6500);}catch(e){}
+}
 function pensPaint(){
  let el=document.getElementById('pensTally');
  if(!el){el=document.createElement('div');el.id='pensTally';document.body.appendChild(el);
@@ -2170,8 +2249,22 @@ function endMatch(){
  st.innerHTML=html;
  document.getElementById('bannerSub').textContent=S.pensW!=null?(w?'Desde los once pasos, tu club escribió historia.':('La ruleta rusa no fue tuya. '+S.clubA.n+' avanza.')):(w?'Tu XI lo dio todo. El club te aplaude de pie.':(d?'Nadie se rindió. A la revancha.':'Duelo aprendido. A trabajar.'));
  const bb=document.getElementById('bannerBtns');bb.style.display='flex';
+ const _isDraw=S.scores[0]===S.scores[1]&&S.pensW==null;
  const _bet=document.getElementById('btnEt');
- if(_bet)_bet.style.display=(S.scores[0]===S.scores[1]&&!window.__career&&!MUSTWIN&&S.pensW==null)?'':'none';   /* amistoso empatado: tú pides la guerra ⏱️ */
+ const _bpen=document.getElementById('btnPen');
+ const _bgg=document.getElementById('btnGold');
+ const _canTie=_isDraw&&!window.__career&&!MUSTWIN;
+ const _showOpt=k=>{
+  if(_bet)_bet.style.display=(k==='et')?'':'none';
+  if(_bpen)_bpen.style.display=(k==='pen')?'':'none';
+  if(_bgg)_bgg.style.display=(k==='gg')?'':'none';
+ };
+ if(_canTie){
+  if(TIE==='pen'){_showOpt('pen');}
+  else if(TIE==='et'){_showOpt('et');}
+  else if(TIE==='gg'){_showOpt('gg');}
+  else if(TIE!=='draw'){_showOpt('et');}
+ } else { _showOpt(''); }
  document.getElementById('banner').style.pointerEvents='auto';
  if(window.__career){try{parent.postMessage(careerActa(),'*');}catch(e){}}   /* 📨 la liga recoge el acta */
 }
@@ -2187,6 +2280,13 @@ document.getElementById('btnRematch').onclick=()=>{SFX.ui();newMatch(S.xiH);SFX.
 document.getElementById('btnEt').onclick=()=>{
  SFX.ui();hideBanner();S.etNeed=true;startExtraTime();                  /* el amistoso también puede morir de pie ⏱️ */
 };
+document.getElementById('btnPen').onclick=()=>{
+ SFX.ui();hideBanner();S.et=0;startPens();                              /* 🥅 empate gobernado directo a la ruleta */
+};
+document.getElementById('btnGold').onclick=()=>{
+ SFX.ui();hideBanner();S._ggWant=true;S.etNeed=true;startExtraTime();   /* 🥇 la próxima red es sentencia */
+};
+try{if(FUTSAL||MT>0){arenaSMALL();}}catch(e){}
 document.getElementById('btnExit').onclick=()=>{
  SFX.ui();hideBanner();
  if(window.__career){try{parent.postMessage(careerActa(),'*');}catch(e){}}   /* re-post idempotente: el padre cierra el overlay */
@@ -2259,9 +2359,10 @@ function draw(){
   cx.translate(-clamp(S.ball.x-wx/2,0,W-wx),-clamp(S.ball.y-hy/2,0,H-hy));
  }else if(CAM.z>1.001){cx.scale(CAM.z,CAM.z);cx.translate(-CAM.vx,-CAM.vy);}   /* zoom cámara táctil */
  if(S.shake>0)cx.translate((Math.random()-.5)*S.shake*2,(Math.random()-.5)*S.shake*2);
- /* césped */
+ /* superficie (césped / arena / madera / concreto: la sede pone el color del juego) */
+ const _sf=SURFK?SURF[SURFK]:['#0c7a3a','#0a5e2d'];
  const g=cx.createLinearGradient(0,0,0,H);
- g.addColorStop(0,'#0c7a3a');g.addColorStop(1,'#0a5e2d');
+ g.addColorStop(0,_sf[0]);g.addColorStop(1,_sf[1]);
  cx.fillStyle=g;cx.fillRect(-20,-20,W+40,H+40);
  drawFans();                                          /* 🏟️ tribunas primero, campo encima */
  for(let i=0;i<12;i++){if(i%2)continue;cx.fillStyle='rgba(255,255,255,.04)';cx.fillRect(FIELD.x+i*FIELD.w/12,FIELD.y,FIELD.w/12,FIELD.h);}
@@ -2650,6 +2751,7 @@ function careerBoot(){
  newMatch(careerXI(11));                             /* XI automática: las 11 primeras fichas de TU plantel */
  return car;
 }
+if(window.__TEST__){window.__dbg={get S(){return S},get FIELD(){return FIELD},get GOAL(){return GOAL},get SIDE(){return SIDE},get WALLS(){return WALLS},get GG(){return GG},get RULES(){return RULES},get MT(){return MT},get TIE(){return TIE},get FUTSAL(){return FUTSAL},spotsN:spotsN,arenaSMALL:arenaSMALL};}
 window.__career=careerBoot();
 window.S=S;                 /* ganchos de depuración para tests */
 window.SFX=SFX;
