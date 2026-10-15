@@ -40,10 +40,27 @@ function db(){
   _DB = { clubs: clubs, sels: sels };
   return _DB;
 }
+/* la base viva + los equipos del más allá (para el buscador del builder) */
+function dbFull(){
+  var d = db(), clubs = d.clubs.slice(), sels = d.sels.slice();
+  SYN_LIST.forEach(function(t){ (t.kind === 'club' ? clubs : sels).push(t); });
+  clubs.sort(function(a, b){ return b.r - a.r; }); sels.sort(function(a, b){ return b.r - a.r; });
+  return { clubs: clubs, sels: sels };
+}
+var SYN = {}, SYN_LIST = [];
 function teamById(id){
+  if (SYN[id]) return SYN[id];
   var d = db(), i, all = d.clubs.concat(d.sels);
   for (i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
   return null;
+}
+/* 🧬 equipos "del más allá" (históricos/extintos o liberados por ediciones): se registran
+   una sola vez y conviven con la base viva — Unión Soviética puede campeonar tu Mundial 1930 */
+function registerTeams(list){
+  (list || []).forEach(function(t){
+    if (!t || !t.id || SYN[t.id]) return;
+    SYN[t.id] = t; SYN_LIST.push(t);
+  });
 }
 
 /* ── nombres reales (PLAYERS_NAT) + reserva ficticia ── */
@@ -243,15 +260,27 @@ function makeTournament(cfg){
     T.log.push('📋 ' + T.cfg.name + ': liga a ' + (T.cfg.twoLegLiga ? 'ida y vuelta' : 'sólo ida') + ' con ' + ids.length + ' equipos.');
   } else if (T.phase === 'grupos'){
     var g = T.cfg.groups, nG = clamp(g.n | 0, 2, Math.floor(ids.length / 2) || 2);
-    var pots = ids.slice().sort(function(a, b){ return (teamById(b).r - teamById(a).r); });
-    var gs = [], gi; for (gi = 0; gi < nG; gi++) gs.push([]);
-    /* serpiente por rating */
-    var dir = 1, ix = 0, cnt = 0;
-    while (cnt < pots.length){
-      gs[ix].push(pots[cnt]); cnt++;
-      if (dir === 1 && ix === nG - 1) dir = -1;
-      else if (dir === -1 && ix === 0) dir = 1;
-      else ix += dir;
+    var gs = [], gi;
+    var order = null;
+    if (cfg.groupOrder && cfg.groupOrder.length === nG){
+      var flat = [];
+      cfg.groupOrder.forEach(function(gArr){ flat = flat.concat(gArr || []); });
+      if (flat.length === ids.length) order = cfg.groupOrder;
+    }
+    if (order){
+      gs = order.map(function(gArr){ return gArr.slice(); });
+      T.log.push('🖐️ Sorteo MANUAL: ' + nG + ' grupos confeccionados a dedo.');
+    } else {
+      var pots = ids.slice().sort(function(a, b){ return (teamById(b).r - teamById(a).r); });
+      for (gi = 0; gi < nG; gi++) gs.push([]);
+      /* serpiente por rating */
+      var dir = 1, ix = 0, cnt = 0;
+      while (cnt < pots.length){
+        gs[ix].push(pots[cnt]); cnt++;
+        if (dir === 1 && ix === nG - 1) dir = -1;
+        else if (dir === -1 && ix === 0) dir = 1;
+        else ix += dir;
+      }
     }
     var letters = 'ABCDEFGHIJ';
     T.groups = gs.map(function(t2, i2){
@@ -787,6 +816,7 @@ function PRESETS(){
 /* ── export ── */
 window.TOURNEOS = {
   LS_KEY: LS_KEY,
+  registerTeams: registerTeams, dbFull: dbFull,
   db: db, teamById: teamById, teamColors: teamColors, rosterOf: rosterOf, mkRoster: mkRoster,
   roundRobin: roundRobin, standings: standings,
   makeTournament: makeTournament, playResult: playResult, applyPlayed: applyPlayed,

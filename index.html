@@ -38731,7 +38731,7 @@ window.FC27Bridge = (function () {
 window.TorneosUI = (function(){
 'use strict';
 var T = null, view = 'hub', tab = 'match', root = null, ov = null;
-var B = { ids: {}, q: '', kind: 'all' };
+var B = { ids: {}, q: '', kind: 'all', drawMode: 'auto', groupPick: 0, groupOrder: null };
 var DIFFS = [['0','🎓 Amateur'],['1','⚽ Profesional'],['2','🔥 Leyenda'],['3','🛸 Galáctica']];
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -38849,13 +38849,16 @@ function renderHub(){
   h += '</div><p class="trn-lbl" style="margin-top:18px">Tu laboratorio</p><div class="trn-grid">' +
        '<div class="trn-card" style="border-color:#f5c45155"><h3>🛠️ TORNEO PERSONALIZADO</h3>' +
        '<p>Sandbox total: liga / copa / grupos+eliminatorias, mezcla clubes y selecciones, ida y vuelta, gol de visita, prórroga, penales, mejores terceros, byes… desde 4 equipos hasta el Mundial masivo con TODO el juego.</p>' +
-       '<button class="trn-btn" onclick="TorneosUI.newBuilder()">⚙️ CREAR MI TORNEO</button></div></div></div>';
+       '<button class="trn-btn" onclick="TorneosUI.newBuilder()">⚙️ CREAR MI TORNEO</button></div>' +
+       '<div class="trn-card" style="border-color:#a855f777"><h3>📜 MUSEO DE COMPETICIONES</h3>' +
+       '<p>Todas las ediciones desde la PRIMERA — formato, anfitrión y los equipos de cada año. Mundial 1930, Copa América 1916, Euro 1960, Champions 1956… Y cuando quieras, GENERAS la siguiente edición: clasificados por 🥇 ranking o 🎲 al azar.</p>' +
+       '<button class="trn-btn" style="background:linear-gradient(100deg,#a855f7,#7c3aed);color:#fff" onclick="TornHistUI.open()">📜 ABRIR EL MUSEO</button></div></div></div>';
   root.innerHTML = h;
 }
 
 /* ─────────── BUILDER ─────────── */
 function newBuilder(prefill){
-  B = { ids: {}, q: '', kind: 'all' };
+  B = { ids: {}, q: '', kind: 'all', drawMode: 'auto', groupPick: 0, groupOrder: null };
   if (prefill) prefill.teamIds.forEach(function(id){ B.ids[id] = 1; });
   B.cfg = prefill ? JSON.parse(JSON.stringify(prefill)) : {
     name: 'Mi Torneo', icon: '🏆', format: 'mixto', twoLegLiga: false,
@@ -38874,7 +38877,7 @@ function teamRow(t){
          '<span class="trn-rt">' + (t.kind === 'sel' ? 'selección' : esc(t.lgName || 'club')) + ' · ' + t.r + '</span></div>';
 }
 function renderBuilder(){
-  var d = TOURNEOS.db(), n = cnt(), cfg = B.cfg;
+  var d = (TOURNEOS.dbFull ? TOURNEOS.dbFull() : TOURNEOS.db()), n = cnt(), cfg = B.cfg;
   var nG = Math.min(Math.max(2, cfg.groups.n | 0), Math.max(2, Math.floor(n / 2) || 2));
   if (n >= 4) cfg.groups.n = nG;
   var adv = cfg.groups.advance | 0, b3 = cfg.groups.best3 | 0;
@@ -38937,12 +38940,55 @@ function renderBuilder(){
          '<option value="">🎲 dirijo cualquiera (modo comodín)</option>' +
          Object.keys(B.ids).map(function(id){ var t = TOURNEOS.teamById(id); return '<option value="' + id + '"' + (cfg.userTeam === id ? ' selected' : '') + '>' + esc(t ? t.name : id) + '</option>'; }).join('') + '</select></div></div>';
   }
+  if (cfg.format === 'mixto' && n >= 4){
+    h += drawPanelHTML(d);
+  }
   var ready = n >= 4 && (cfg.format !== 'mixto' || (classified >= 2 && nG >= 2 && Math.min(adv, perG - 1) >= 1));
   h += '<button class="trn-btn" ' + (ready ? '' : 'disabled') + ' style="font-size:15px;padding:12px 22px" onclick="TorneosUI.create()">🏁 CREAR TORNEO (' + n + ' equipos)</button></div></div>';
   root.innerHTML = h;
 }
 function cfgSet(k, v){ B.cfg[k] = v; if (k === 'format') render(); }
 function grpSet(k, v){ B.cfg.groups[k] = Math.max(0, v | 0); renderBuilder(); }
+
+/* ── sorteo de grupos: AUTO (serpiente por rating) o MANUAL (a dedo) ── */
+function drawPanelHTML(d){
+  var cfg = B.cfg, ids = Object.keys(B.ids);
+  var nG = Math.max(2, Math.min(cfg.groups.n | 0, Math.floor(ids.length / 2) || 2));
+  var letters = 'ABCDEFGHIJ'.split('');
+  if (!B.groupOrder || B.groupOrder.length !== nG){ B.groupOrder = []; for (var i = 0; i < nG; i++) B.groupOrder.push([]); }
+  var assigned = {};
+  B.groupOrder.forEach(function(gO){ gO.forEach(function(id){ assigned[id] = 1; }); });
+  var free = ids.filter(function(id){ return !assigned[id]; });
+  var h = '<div class="trn-card" style="margin-top:14px"><p class="trn-lbl">🎲 sorteo de grupos</p>' +
+    '<div class="trn-chips">' +
+    '<button class="trn-ktab' + (B.drawMode === 'auto' ? ' on' : '') + '" onclick="TorneosUI.drawModeSet(\'auto\')">🤖 AUTO (serpiente por rating)</button>' +
+    '<button class="trn-ktab' + (B.drawMode === 'manual' ? ' on' : '') + '" onclick="TorneosUI.drawModeSet(\'manual\')">🖐️ MANUAL (tú armas los grupos)</button></div>';
+  if (B.drawMode === 'auto'){
+    h += '<p class="sub" style="color:#9fb0d8">Los ' + nG + ' grupos se sortean solos en serpiente al crear el torneo (los más fuertes se reparten).</p></div>';
+  } else {
+    var gp = Math.min(B.groupPick | 0, nG - 1), tgt = B.groupOrder[gp] || [];
+    h += '<div class="trn-chips">';
+    for (var g2 = 0; g2 < nG; g2++){
+      h += '<button class="trn-ktab' + (gp === g2 ? ' on' : '') + '" onclick="TorneosUI.drawPickG(' + g2 + ')">GRUPO ' + letters[g2] + ' (' + (B.groupOrder[g2] || []).length + ')</button>';
+    }
+    h += '<button class="trn-btn ghost" style="margin-left:auto" onclick="TorneosUI.drawReset()">🧹 reiniciar</button></div>';
+    h += '<p class="sub" style="color:#9fb0d8">Toca un equipo PENDIENTE para mandarlo al GRUPO ' + letters[gp] + '; toca uno ya colocado para devolverlo.</p>';
+    h += '<div class="trn-chips"><p class="trn-lbl" style="width:100%">pendientes (' + free.length + ')</p>';
+    free.forEach(function(id){ var t = TOURNEOS.teamById(id); if (t) h += '<span class="trn-chip" onclick="TorneosUI.drawAssign(\'' + id.replace(/'/g, "\\'") + '\')">' + esc(t.name) + '</span>'; });
+    h += '</div>';
+    (B.groupOrder || []).forEach(function(gO, gi){
+      h += '<div style="margin-top:8px"><p class="trn-lbl">Grupo ' + letters[gi] + ' (' + gO.length + ')</p><div class="trn-chips">';
+      gO.forEach(function(id){ var t = TOURNEOS.teamById(id); if (t) h += '<span class="trn-chip" style="border-color:#f5c45166" onclick="TorneosUI.drawAssign(\'' + id.replace(/'/g, "\\'") + '\')">' + esc(t.name) + ' <b>×</b></span>'; });
+      if (!gO.length) h += '<span class="sub" style="color:#6b7ca8">vacío</span>';
+      h += '</div></div>';
+    });
+    var empty = B.groupOrder.some(function(gO){ return !gO.length; });
+    if (free.length) h += '<p class="sub" style="color:#ffb3b3">⚠️ quedan ' + free.length + ' pendientes: al crear se reparten solos en los vacíos.</p>';
+    else if (empty) h += '<p class="sub" style="color:#ffb3b3">⚠️ hay grupos vacíos.</p></div>';
+  }
+  h += '</div>';
+  return h;
+}
 
 /* ─────────── VISTA EN VIVO ─────────── */
 function continueLast(){ T = TOURNEOS.loadLast(); view = T ? 'play' : 'hub'; render(); }
@@ -38962,6 +39008,7 @@ function create(){
   }
   var nt = TOURNEOS.makeTournament({
     name: cfg.name || 'Mi Torneo', icon: cfg.icon || '🏆', format: cfg.format, teamIds: ids,
+    groupOrder: (cfg.format === 'mixto' && B.drawMode === 'manual' && B.groupOrder) ? B.groupOrder : null,
     twoLegLiga: !!cfg.twoLegLiga, twoLegKo: cfg.format === 'liga' ? false : !!cfg.twoLegKo,
     awayGoals: !!cfg.awayGoals && !!cfg.twoLegKo, extraTime: cfg.extraTime !== false, pens: cfg.pens !== false,
     neutral: !!cfg.neutral, groups: g, userTeam: cfg.userTeam || null
@@ -39182,14 +39229,27 @@ return {
   search: function(q){ B.q = q; renderBuilder(); },
   kind: function(k){ B.kind = k; renderBuilder(); },
   pickRandom: function(n){
-    var d = TOURNEOS.db(), all = d.clubs.concat(d.sels), add = 0;
+    var d = (TOURNEOS.dbFull ? TOURNEOS.dbFull() : TOURNEOS.db()), all = d.clubs.concat(d.sels), add = 0;
     while (add < n){
       var t2 = all[(Math.random() * all.length) | 0];
       if (!B.ids[t2.id]) { B.ids[t2.id] = 1; add++; }
     }
     renderBuilder();
   },
-  clearIds: function(){ B.ids = {}; renderBuilder(); },
+  clearIds: function(){ B.ids = {}; B.groupOrder = null; renderBuilder(); },
+  drawModeSet: function(m){ B.drawMode = m; if (m === 'auto') B.groupOrder = null; renderBuilder(); },
+  drawPickG: function(i){ B.groupPick = i | 0; renderBuilder(); },
+  drawReset: function(){ B.groupOrder = null; renderBuilder(); },
+  drawAssign: function(id){
+    if (!B.groupOrder) return;
+    var found = false;
+    B.groupOrder.forEach(function(gO){ var ix = gO.indexOf(id); if (ix >= 0){ gO.splice(ix, 1); found = true; } });
+    if (!found){
+      var gp = Math.min(B.groupPick | 0, B.groupOrder.length - 1);
+      B.groupOrder[gp].push(id);
+    }
+    renderBuilder();
+  },
   cfgSet: cfgSet, grpSet: grpSet,
   tab: function(k){ tab = k; render(); },
   sim: sim, simNextDay: simNextDay, simRest: simRest,
@@ -39202,5 +39262,113 @@ return {
 <script src="quickmatch.js?v=1"></script>
 <script src="impostor-words.js?v=1"></script>
 <script src="impostor.js?v=1"></script>
+<script src="torneos-hist.js?v=1"></script>
+<script>
+/* ═══════════ MUSEO DE EDICIONES + PRÓXIMA EDICIÓN (TornHistUI) ═══════════ */
+window.TornHistUI = (function(){
+'use strict';
+var ov = null, cur = null, edi = null;
+function esc(s){ return String(s == null ? '' : s).replace(/[<>&]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c]; }); }
+function css(){
+  if (document.getElementById('thist-css')) return;
+  var st = document.createElement('style'); st.id = 'thist-css';
+  st.textContent =
+    '#thist-root{position:fixed;inset:0;z-index:99991;background:linear-gradient(180deg,#14081f,#07060f);overflow-y:auto;color:#efe9ff;font-family:system-ui,-apple-system,sans-serif}' +
+    '.thi-top{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(12,7,20,.94);border-bottom:1px solid #3b2064;backdrop-filter:blur(6px)}' +
+    '.thi-back{background:#241a3f;color:#d7c9ff;border:1px solid #46306e;border-radius:9px;padding:7px 13px;font-weight:800;cursor:pointer}' +
+    '.thi-wrap{max-width:820px;margin:0 auto;padding:14px 12px 60px;display:flex;flex-direction:column;gap:12px}' +
+    '.thi-card{background:linear-gradient(180deg,#1c1030,#100a1e);border:1px solid #342253;border-radius:14px;padding:13px}' +
+    '.thi-h{font-size:.72rem;letter-spacing:2px;color:#c4a5f8;text-transform:uppercase;margin-bottom:8px;font-weight:800}' +
+    '.thi-cmp{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}' +
+    '.thi-c{border:2px solid #342253;border-radius:12px;padding:11px;cursor:pointer;background:#160d28;transition:.15s;text-align:left}' +
+    '.thi-c:hover{border-color:#a855f7}.thi-c.on{border-color:#e9b3ff;background:#241548}' +
+    '.thi-list{max-height:320px;overflow-y:auto;border:1px solid #342253;border-radius:10px;background:#120a20}' +
+    '.thi-ed{display:flex;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid #201338;cursor:pointer;font-size:13px}' +
+    '.thi-ed:hover,.thi-ed.on{background:#241548}' +
+    '.thi-ed b{color:#ffd166;min-width:64px}' +
+    '.thi-ed small{color:#a495d8}' +
+    '.thi-field{display:flex;flex-wrap:wrap;gap:6px}' +
+    '.thi-t{background:#241548;border:1px solid #46306e;border-radius:16px;padding:4px 10px;font-size:12px}' +
+    '.thi-pair{display:grid;grid-template-rows:auto auto;gap:8px;margin:8px 0}' +
+    '.thi-big{border:0;border-radius:12px;padding:14px 12px;font:900 14px system-ui;cursor:pointer;color:#fff}' +
+    '.thi-note{color:#a495d8;font-size:.74rem;line-height:1.55}';
+  document.head.appendChild(st);
+}
+function open(){
+  css();
+  if (!ov){ ov = document.createElement('div'); ov.id = 'thist-root'; document.body.appendChild(ov); }
+  ov.style.display = '';
+  renderHome();
+}
+function close(){ if (ov) ov.style.display = 'none'; }
+function renderHome(){
+  cur = null; edi = null;
+  var h = top('📜 MUSEO DE COMPETICIONES', 'window.TornHistUI.close()');
+  h += '<div class="thi-card"><div class="thi-h">Selecciona la competición</div><div class="thi-cmp">';
+  Object.keys(TORNHIST.COMPS).forEach(function(k){
+    var s = TORNHIST.summary(k);
+    h += '<button class="thi-c" onclick="TornHistUI.pick(\'' + k + '\')"><b>' + s.icon + ' ' + esc(s.name) + '</b><br>' +
+         '<small>' + s.editions + ' ediciones · desde ' + s.first + ' hasta ' + s.last + ' · ' + (s.type === 'club' ? '🏟️ clubes' : '🌍 selecciones') + '</small></button>';
+  });
+  h += '</div></div>';
+  ov.innerHTML = h;
+}
+function top(title, backFn){
+  return '<div class="thi-top"><button class="thi-back" onclick="' + backFn + '">← atrás</button>' +
+         '<div style="font-weight:900;color:#e9b3ff;letter-spacing:.5px">' + esc(title) + '</div></div><div class="thi-wrap">';
+}
+function pick(k){ cur = k; edi = null; renderComp(); }
+function renderComp(){
+  var s = TORNHIST.summary(cur), h = top(s.icon + ' ' + s.name, 'TornHistUI.home()');
+  h += '<div class="thi-card"><div class="thi-h">🪄 Crear la SIGUIENTE edición (' + esc(String(s.next)) + (s.nextHost ? ' · ' + esc(s.nextHost) : '') + ')</div>' +
+       '<div class="thi-note">Genera los clasificados reales-ish por 🥇 ranking de la competición… o deja que el azar 🎲 descabele todo. Después editas todo en el Creador (incl. sorteo manual de grupos) y la juegas.</div>' +
+       '<div class="thi-pair" style="grid-template-columns:1fr 1fr;display:grid;margin-top:8px">' +
+       '<button class="thi-big" style="background:linear-gradient(180deg,#a855f7,#7c3aed)" onclick="TornHistUI.gen(\'rank\')">🥇 POR RANKING</button>' +
+       '<button class="thi-big" style="background:linear-gradient(180deg,#f472b6,#be185d)" onclick="TornHistUI.gen(\'random\')">🎲 ALEATORIO</button></div></div>';
+  h += '<div class="thi-card"><div class="thi-h">📜 Ediciones (' + s.editions + ')</div><div class="thi-list">';
+  for (var i = 0; i < s.editions; i++){
+    var e = TORNHIST.edition(cur, i);
+    h += '<div class="thi-ed' + (edi === i ? ' on' : '') + '" onclick="TornHistUI.detail(' + i + ')"><b>' + esc(String(e.year)) + '</b>' +
+         '<span>' + (e.host ? '📍 ' + esc(e.host) : (e.champ ? '🥇 ' + esc(e.champ) + (e.runner ? ' · 🥈 ' + esc(e.runner) : '') : '')) + '</span>' +
+         '<small style="margin-left:auto">' + (e.field ? e.field.length + ' participantes' : 'finalistas') + '</small></div>';
+  }
+  h += '</div></div>';
+  if (edi != null) h += detailHTML();
+  ov.innerHTML = h;
+}
+function detailHTML(){
+  var e = TORNHIST.edition(cur, edi);
+  var s = TORNHIST.summary(cur);
+  var h = '<div class="thi-card"><div class="thi-h">📖 ' + esc(String(e.year)) + ' · ' + esc(s.name) + '</div>';
+  if (e.host) h += '<p class="thi-note">📍 Anfitrión: ' + esc(e.host) + '</p>';
+  h += '<p class="thi-note">📐 Formato: ' + esc(e.fmt) + '</p>';
+  if (e.champ) h += '<p class="thi-note">🥇 Campeón: <b style="color:#ffd166">' + esc(e.champ) + '</b>' + (e.runner ? ' · 🥈 ' + esc(e.runner) : '') + (e.note ? ' — ' + esc(e.note) : '') + '</p>';
+  if (e.field){
+    h += '<div class="thi-h" style="margin-top:8px">Equipos participantes (' + e.field.length + ')</div><div class="thi-field">';
+    e.field.forEach(function(t){ h += '<span class="thi-t">' + esc(t) + '</span>'; });
+    h += '</div>';
+  }
+  h += '</div>';
+  return h;
+}
+function gen(mode){
+  var s = TORNHIST.summary(cur);
+  var n = 32;
+  var last = TORNHIST.edition(cur, s.editions - 1);
+  if (last && last.field && last.field.length) n = last.field.length;
+  var teams = TORNHIST.nextField(cur, mode, Math.max(8, Math.min(48, n)));
+  var reg = teams.map(function(t, i){
+    var safe = String(t.name).normalize('NFD').replace(/[^\w\s-]/g, '').replace(/[\s-]+/g, '-');
+    return { id: 'h:' + cur + ':' + safe, kind: t.kind === 'club' ? 'club' : 'sel', name: t.name, r: t.r, lg: 'HIST', lgName: s.name, conf: t.conf || '' };
+  });
+  try { TOURNEOS.registerTeams(reg); } catch (e) {}
+  try { window.TorneosUI.open(); } catch (e2) {}
+  var pre = { name: s.name + ' ' + s.next, icon: s.icon, format: 'mixto', teamIds: reg.map(function(t){ return t.id; }), userTeam: '' };
+  window.TorneosUI.newBuilder(pre);
+  close();
+}
+return { open: open, close: close, home: renderHome, pick: pick, detail: function(i){ edi = i; renderComp(); }, gen: gen };
+})();
+</script>
 </body>
 </html>
