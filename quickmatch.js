@@ -462,10 +462,18 @@ function cycle(side, dir) {
   putCfg(c);
   render();
 }
+function defPick(list, pref) {
+  if (!list || !list.length) return '';
+  if (pref && list.indexOf(pref) >= 0) return pref;
+  return list[0] || '';
+}
 function eaCard(c) {
   var LH = listFor(c.kindH), LA = listFor(c.kindA);
-  if (!c.home || LH.indexOf(c.home) < 0) c.home = LH[0] || '';
-  if (!c.away || LA.indexOf(c.away) < 0) c.away = LA[1] || LA[0] || '';
+  if (!c.home || LH.indexOf(c.home) < 0) c.home = defPick(LH, 'FC Barcelona');
+  if (!c.away || LA.indexOf(c.away) < 0 || c.away === c.home) {
+    c.away = defPick(LA, 'Real Madrid');
+    if (!c.away || c.away === c.home) c.away = LA.filter(function (n) { return n !== c.home; })[0] || '';
+  }
   function panel(side) {
     var kind = c['kind' + side], name = side === 'H' ? c.home : c.away;
     if (!name) name = '—';
@@ -566,8 +574,9 @@ function wire(body, c) {
   sel('qm-mt', 'mt', true); sel('qm-rules', 'rules'); sel('qm-tie', 'tie'); sel('qm-side', 'side', true);
   var go = document.getElementById('qm-go');
   if (go) go.onclick = function () {
-    if (!c.home) c.home = listFor(c.kindH)[0];
-    if (!c.away) c.away = listFor(c.kindA)[1] || listFor(c.kindA)[0];
+    if (!c.home) c.home = defPick(listFor(c.kindH), 'FC Barcelona');
+    if (!c.away) c.away = defPick(listFor(c.kindA), 'Real Madrid');
+    if (c.away === c.home) c.away = listFor(c.kindA).filter(function (n) { return n !== c.home; })[0] || '';
     if (!c.home || !c.away) { toast('Elige ambos equipos'); return; }
     if (c.home === c.away) { toast('Elige dos equipos distintos'); return; }
     launch(c);
@@ -632,6 +641,6 @@ return {
   render: render, renderSettings: renderSettings, ensureTab: ensureTab, openTab: openTab,
   open: open, closeOverlay: closeOverlay,
   cfg: cfg, settings: settings,
-  cycle: cycle, crestOf: crestOf, listFor: listFor, teamRate: teamRate
+  cycle: cycle, crestOf: crestOf, listFor: listFor, teamRate: teamRate, defPick: defPick
 };
 });
