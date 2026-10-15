@@ -368,6 +368,29 @@ function css() {
     '.qm-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}' +
     '.qm-btn{background:linear-gradient(180deg,#f6ad2d,#e08a12);color:#1a1206;border:0;border-radius:12px;padding:14px 18px;font:900 15px system-ui;cursor:pointer;width:100%;box-shadow:0 6px 18px rgba(246,173,45,.25)}' +
     '.qm-wall{display:inline-block;font-size:.6rem;background:#1a2140;border-radius:6px;padding:1px 6px;margin-top:4px;color:#ffd166;border:1px solid #4d5a8c}' +
+    '.qm-ea-top{font-family:\'Barlow Condensed\',sans-serif;font-style:italic;font-weight:800;letter-spacing:2px;font-size:.95rem;color:#8ffce4;margin-bottom:8px}' +
+    '.qm-ea{display:grid;grid-template-columns:1fr 86px 1fr;gap:10px;align-items:stretch}' +
+    '.qm-panel{position:relative;background:linear-gradient(170deg,rgba(16,44,60,.6),rgba(7,17,30,.72));border:1px solid rgba(64,220,200,.20);border-radius:22px;padding:26px 14px 16px;text-align:center;box-shadow:0 14px 34px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06)}' +
+    '.qm-side{position:absolute;top:0;left:12px;font-family:\'Barlow Condensed\',sans-serif;font-style:italic;font-weight:800;color:rgba(190,255,238,.30);font-size:2rem;letter-spacing:2px}' +
+    '.qm-panel:last-child .qm-side{left:auto;right:12px}' +
+    '.qm-teamname{font-family:\'Barlow Condensed\',sans-serif;font-style:italic;font-weight:800;font-size:1.45rem;color:#eafffb;letter-spacing:.5px;margin:6px 0 4px;min-height:1.6em}' +
+    '.qm-crestbox{position:relative;height:132px;display:flex;align-items:center;justify-content:center;margin:4px 0 8px}' +
+    '.qm-crestimg{height:118px;max-width:150px;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.5))}' +
+    '.qm-flagbig svg{height:96px;width:auto;border-radius:8px;box-shadow:0 8px 18px rgba(0,0,0,.45)}' +
+    '.qm-shield{height:104px;width:84px;display:flex;align-items:center;justify-content:center;font-family:\'Barlow Condensed\',sans-serif;font-style:italic;font-weight:900;font-size:2rem;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.5);clip-path:polygon(50% 0,100% 18%,88% 88%,50% 100%,12% 88%,0 18%);box-shadow:0 10px 22px rgba(0,0,0,.4)}' +
+    '.qm-arr{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:64px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:#b9ffe9;background:rgba(255,255,255,.07);border:1px solid rgba(140,240,220,.28);border-radius:12px;cursor:pointer;z-index:2;transition:all .15s}' +
+    '.qm-arr:hover{background:rgba(37,246,201,.22);color:#fff}' +
+    '.qm-l{left:4px}.qm-r{right:4px}' +
+    '.qm-stars{color:#ffd166;font-size:.95rem;letter-spacing:2px;margin-bottom:6px}' +
+    '.qm-stars-off{opacity:.22}' +
+    '.qm-attrs{display:flex;justify-content:center;gap:14px;font-size:.7rem;color:#9fd8c8;letter-spacing:1px;margin-bottom:6px}' +
+    '.qm-attrs b{color:#eafffb;margin-left:2px}' +
+    '.qm-tipo{font-size:.64rem;color:rgba(170,230,215,.55);letter-spacing:1px;text-transform:uppercase}' +
+    '.qm-center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}' +
+    '.qm-vs{font-family:\'Barlow Condensed\',sans-serif;font-style:italic;font-weight:900;font-size:2.1rem;background:linear-gradient(180deg,#eafffb,#25f6c9);-webkit-background-clip:text;background-clip:text;color:transparent}' +
+    '.qm-mode-tag{font-size:.72rem;font-weight:700;color:#b9ffe9;background:rgba(37,246,201,.12);border:1px solid rgba(37,246,201,.3);border-radius:999px;padding:4px 10px}' +
+    '.qm-meta-sm{font-size:.64rem;color:#8fbdb0;letter-spacing:.5px}' +
+    '@media(max-width:720px){.qm-ea{grid-template-columns:1fr}.qm-center{flex-direction:row;padding:4px 0}}' +
     '@media(max-width:640px){.qm-venues{grid-template-columns:repeat(2,1fr)}}';
   document.head.appendChild(st);
 }
@@ -389,6 +412,83 @@ function venueSw(v, isFut) {
   return 'background:linear-gradient(135deg,' + (cmap[v.k] || '#333') + ',' + shade(cmap[v.k] || '#333', .55) + ')';
 }
 
+/* ── chooser estilo Classic Match (paneles HOME / AWAY) ─────────────────── */
+function listFor(kind) {
+  return kind === 'nat'
+    ? NATIONS.map(function (n) { return n.n; })
+    : clubsList().slice(0, 80).map(function (x) { return x.n; });
+}
+function teamRate(name, kind) {
+  var hit;
+  if (kind === 'nat') {
+    hit = NATIONS.filter(function (n) { return n.n === name; })[0];
+    return hit ? hit.r : 80;
+  }
+  hit = clubsList().filter(function (c) { return c.n === name; })[0];
+  return hit ? hit.best : 78;
+}
+function stars(r) {
+  var n = Math.max(1, Math.min(5, Math.round(r / 20)));
+  return '\u2605\u2605\u2605\u2605\u2605'.slice(0, n) +
+    '<span class="qm-stars-off">' + '\u2605\u2605\u2605\u2605\u2605'.slice(0, 5 - n) + '</span>';
+}
+function crestOf(kind, name) {
+  var i, u, nat = null;
+  if (kind === 'nat') {
+    nat = NATIONS.filter(function (n) { return n.n === name; })[0];
+    try {
+      if (nat && self.IntlCup && IntlCup.flagSVG) {
+        var f = IntlCup.flagSVG(nat.k, 108, 72);
+        if (f) return '<div class="qm-flagbig">' + f + '</div>';
+      }
+    } catch (e) {}
+  } else {
+    try {
+      u = (typeof CRESTS !== 'undefined' && CRESTS[name]) || (self.CRESTS && self.CRESTS[name]);
+      if (u) return '<img class="qm-crestimg" src="' + u + '" alt="">';
+    } catch (e) {}
+  }
+  var cs = nat ? [nat.c1, nat.c2] : colorsOf(name);
+  var init = String(name).split(' ').map(function (w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+  return '<div class="qm-shield" style="background:linear-gradient(160deg,' + cs[0] + ',' + cs[1] + ')">' + init + '</div>';
+}
+function cycle(side, dir) {
+  var c = cfg();
+  var kind = c['kind' + side], key = side === 'H' ? 'home' : 'away';
+  var L = listFor(kind);
+  if (!L.length) return;
+  var i = L.indexOf(c[key]); if (i < 0) i = 0;
+  c[key] = L[(i + dir + L.length) % L.length];
+  putCfg(c);
+  render();
+}
+function eaCard(c) {
+  var LH = listFor(c.kindH), LA = listFor(c.kindA);
+  if (!c.home || LH.indexOf(c.home) < 0) c.home = LH[0] || '';
+  if (!c.away || LA.indexOf(c.away) < 0) c.away = LA[1] || LA[0] || '';
+  function panel(side) {
+    var kind = c['kind' + side], name = side === 'H' ? c.home : c.away;
+    if (!name) name = '—';
+    var r = teamRate(name, kind);
+    return '<div class="qm-panel">' +
+      '<div class="qm-side">' + (side === 'H' ? 'HOME' : 'AWAY') + '</div>' +
+      '<div class="qm-row" style="justify-content:center">' +
+      '<div class="qm-chip' + (kind === 'club' ? ' on' : '') + '" data-qm="kind' + side + ':club">\ud83c\udfd9\ufe0f Club</div>' +
+      '<div class="qm-chip' + (kind === 'nat' ? ' on' : '') + '" data-qm="kind' + side + ':nat">\ud83c\udf0d Selecci\u00f3n</div></div>' +
+      '<div class="qm-teamname">' + name + '</div>' +
+      '<div class="qm-crestbox"><div class="qm-arr qm-l" data-qmcy="' + side + ':-1">\u2039</div>' +
+      crestOf(kind, name) + '<div class="qm-arr qm-r" data-qmcy="' + side + ':1">\u203a</div></div>' +
+      '<div class="qm-stars">' + stars(r) + '</div>' +
+      '<div class="qm-attrs"><span>ATT <b>' + r + '</b></span><span>MID <b>' + Math.max(40, r - 1) + '</b></span><span>DEF <b>' + Math.max(40, r - 2) + '</b></span></div>' +
+      '<div class="qm-tipo">' + (kind === 'club' ? '\ud83c\udfd9\ufe0f Club profesional' : '\ud83c\udf0d Selecci\u00f3n nacional') + '</div></div>';
+  }
+  return '<div class="qm-card"><div class="qm-ea-top">\u26a1 PARTIDO R\u00c1PIDO \u00b7 ELIGE EQUIPOS</div><div class="qm-ea">' +
+    panel('H') +
+    '<div class="qm-center"><div class="qm-vs">VS</div><div class="qm-mode-tag">' + (c.mode === 'futsal' ? '\ud83c\udfd9\ufe0f FutSal' : '\u26bd F11') + '</div>' +
+    '<div class="qm-meta-sm">IA ' + DIFFS[c.diff] + '</div><div class="qm-meta-sm">' + (c.mt / 60) + ' min \u00b7 mitad</div></div>' +
+    panel('A') + '</div></div>';
+}
+
 function render() {
   css();
   var body = document.getElementById('qm-body');
@@ -404,16 +504,7 @@ function render() {
     '<div class="qm-mode' + (isFut ? ' on' : '') + '" data-qm="mode:futsal"><b>🏟️ Modo FutSal</b><small>2v2–5v5 · arenas · paredes · gol de oro</small></div>' +
     '</div></div>' +
     /* equipos */
-    '<div class="qm-card"><div class="qm-h">🆚 Encuentro</div>' +
-    '<div class="qm-grid2"><div><div class="qm-row" style="margin-bottom:4px">' +
-    '<div class="qm-chip' + (c.kindH === 'club' ? ' on' : '') + '" data-qm="kindH:club">🏟️ Club</div>' +
-    '<div class="qm-chip' + (c.kindH === 'nat' ? ' on' : '') + '" data-qm="kindH:nat">🌍 Selección</div></div>' +
-    '<select class="qm-sel" id="qm-home">' + (c.kindH === 'nat' ? optsNations(c.home || 'Argentina') : optsClubs(c.home)) + '</select></div>' +
-    '<div><div class="qm-row" style="margin-bottom:4px">' +
-    '<div class="qm-chip' + (c.kindA === 'club' ? ' on' : '') + '" data-qm="kindA:club">🏟️ Club</div>' +
-    '<div class="qm-chip' + (c.kindA === 'nat' ? ' on' : '') + '" data-qm="kindA:nat">🌍 Selección</div></div>' +
-    '<select class="qm-sel" id="qm-away">' + (c.kindA === 'nat' ? optsNations(c.away || 'Brasil') : optsClubs(c.away)) + '</select></div></div>' +
-    '<div style="margin-top:8px;font-size:.68rem;color:#8fa2cf">🧠 El XI se autocompleta por posición natural y rating (POR + mejores DEF/MED/DEL).</div></div>' +
+    eaCard(c) +
     /* evento oficial (solo F11) */
     (!isFut ? '<div class="qm-card"><div class="qm-h">🏆 Encuentro</div><div class="qm-grid2">' +
       FINALS.map(function (f) { return '<div class="qm-chip' + (c.event === f.k ? ' on' : '') + '" data-qm="event:' + f.k + '">' + f.n + '</div>'; }).join('') +
@@ -460,16 +551,23 @@ function wire(body, c) {
       store(); render();
     };
   });
+  root.querySelectorAll('[data-qmcy]').forEach(function (el) {
+    el.setAttribute('role', 'button');
+    el.onclick = function () {
+      var kv = (el.getAttribute('data-qmcy') || '').split(':');
+      cycle(kv[0], +kv[1]);
+    };
+  });
   function sel(id, k, num) {
     var s = document.getElementById(id); if (!s) return;
     s.onchange = function () { c[k] = num ? (+s.value) : s.value; store(); };
   }
-  sel('qm-home', 'home'); sel('qm-away', 'away'); sel('qm-diff', 'diff', true);
+  sel('qm-diff', 'diff', true);
   sel('qm-mt', 'mt', true); sel('qm-rules', 'rules'); sel('qm-tie', 'tie'); sel('qm-side', 'side', true);
   var go = document.getElementById('qm-go');
   if (go) go.onclick = function () {
-    var h = document.getElementById('qm-home'), a = document.getElementById('qm-away');
-    if (h) c.home = h.value; if (a) c.away = a.value;
+    if (!c.home) c.home = listFor(c.kindH)[0];
+    if (!c.away) c.away = listFor(c.kindA)[1] || listFor(c.kindA)[0];
     if (!c.home || !c.away) { toast('Elige ambos equipos'); return; }
     if (c.home === c.away) { toast('Elige dos equipos distintos'); return; }
     launch(c);
@@ -533,6 +631,7 @@ return {
   buildURL: buildURL, launch: launch, close: close,
   render: render, renderSettings: renderSettings, ensureTab: ensureTab, openTab: openTab,
   open: open, closeOverlay: closeOverlay,
-  cfg: cfg, settings: settings
+  cfg: cfg, settings: settings,
+  cycle: cycle, crestOf: crestOf, listFor: listFor, teamRate: teamRate
 };
 });
