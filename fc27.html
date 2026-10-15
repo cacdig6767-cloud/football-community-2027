@@ -38734,7 +38734,7 @@ window.FC27Bridge = (function () {
 window.TorneosUI = (function(){
 'use strict';
 var T = null, view = 'hub', tab = 'match', root = null, ov = null;
-var B = { ids: {}, q: '', kind: 'all', drawMode: 'auto', groupPick: 0, groupOrder: null };
+var B = { ids: {}, q: '', kind: 'all', drawMode: 'auto', groupPick: 0, groupOrder: null, autoKind: 'club', autoMode: 'rand' };
 var DIFFS = [['0','🎓 Amateur'],['1','⚽ Profesional'],['2','🔥 Leyenda'],['3','🛸 Galáctica']];
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -38861,7 +38861,7 @@ function renderHub(){
 
 /* ─────────── BUILDER ─────────── */
 function newBuilder(prefill){
-  B = { ids: {}, q: '', kind: 'all', drawMode: 'auto', groupPick: 0, groupOrder: null };
+  B = { ids: {}, q: '', kind: 'all', drawMode: 'auto', groupPick: 0, groupOrder: null, autoKind: 'club', autoMode: 'rand' };
   if (prefill) prefill.teamIds.forEach(function(id){ B.ids[id] = 1; });
   B.cfg = prefill ? JSON.parse(JSON.stringify(prefill)) : {
     name: 'Mi Torneo', icon: '🏆', format: 'mixto', twoLegLiga: false,
@@ -38900,7 +38900,13 @@ function renderBuilder(){
   h += '<div class="trn-row"><div style="flex:2;min-width:220px"><input class="trn-inp" placeholder="🔍 buscar club o país…" value="' + esc(B.q) + '" oninput="TorneosUI.search(this.value)"></div>' +
        '<div style="flex:none;display:flex;gap:6px">' +
        [['all','👥 Todos'],['club','🏟️ Clubes'],['sel','🌍 Selecciones']].map(function(o){ return '<button type="button" class="trn-ktab' + (B.kind === o[0] ? ' on' : '') + '" onclick="TorneosUI.kind(\'' + o[0] + '\')">' + o[1] + '</button>'; }).join('') + '</div>' +
-       '<div style="flex:none;display:flex;gap:6px"><button class="trn-btn alt" onclick="TorneosUI.pickRandom(8)">🎲 +8 random</button><button class="trn-btn ghost" onclick="TorneosUI.clearIds()">limpiar</button></div></div>';
+       '<div style="flex:none;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+       '<select class="trn-sel" title="filtro de relleno" aria-label="filtro de relleno" onchange="TorneosUI.autoKindSet(this.value)">' +
+       [['club','🏟️ Clubes'],['sel','🌍 Selecciones']].map(function(o){ return '<option value="' + o[0] + '"' + (B.autoKind === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
+       '<select class="trn-sel" title="criterio de relleno" aria-label="criterio de relleno" onchange="TorneosUI.autoModeSet(this.value)">' +
+       [['rand','🎲 Aleatorio'],['rank','🏆 Por rating']].map(function(o){ return '<option value="' + o[0] + '"' + (B.autoMode === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
+       '<button class="trn-btn alt" onclick="TorneosUI.autoFill(8)" title="Rellena 8 cupos con el filtro y criterio elegidos">✨ +8 auto</button>' +
+       '<button class="trn-btn ghost" onclick="TorneosUI.clearIds()">limpiar</button></div></div>';
   if (n){
     h += '<div class="trn-chips">';
     Object.keys(B.ids).slice(0, 80).forEach(function(id){ var t = TOURNEOS.teamById(id); if (t) h += '<span class="trn-chip" onclick="TorneosUI.toggle(\'' + id.replace(/'/g, "\\'") + '\')">' + (t.kind === 'sel' ? flag(t.code, 18) : '') + esc(t.name) + ' <b>✕</b></span>'; });
@@ -39231,6 +39237,20 @@ return {
   toggle: function(id){ if (B.ids[id]) delete B.ids[id]; else B.ids[id] = 1; renderBuilder(); },
   search: function(q){ B.q = q; renderBuilder(); },
   kind: function(k){ B.kind = k; renderBuilder(); },
+  autoKindSet: function(v){ B.autoKind = (v === 'sel' ? 'sel' : 'club'); },
+  autoModeSet: function(v){ B.autoMode = (v === 'rank' ? 'rank' : 'rand'); },
+  /* v6.4 · autocompletar: filtra clubes o selecciones; aleatorio o por ranking (.r desc);
+     nunca repite equipos ya elegidos en B.ids */
+  autoFill: function(n){
+    var d = (TOURNEOS.dbFull ? TOURNEOS.dbFull() : TOURNEOS.db()),
+        tab = B.autoKind === 'sel' ? d.sels : d.clubs,
+        pool = tab.filter(function(t){ return !B.ids[t.id]; }),
+        i, j, tmp, add = 0;
+    if (B.autoMode === 'rank') pool.sort(function(a, b){ return (b.r | 0) - (a.r | 0); });
+    else for (i = pool.length - 1; i > 0; i--){ j = (Math.random() * (i + 1)) | 0; tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp; }
+    for (i = 0; i < pool.length && add < n; i++){ B.ids[pool[i].id] = 1; add++; }
+    renderBuilder();
+  },
   pickRandom: function(n){
     var d = (TOURNEOS.dbFull ? TOURNEOS.dbFull() : TOURNEOS.db()), all = d.clubs.concat(d.sels), add = 0;
     while (add < n){
