@@ -104,7 +104,7 @@ var CSS = [
 '.pes-tab.active{background:linear-gradient(160deg,rgba(37,246,201,.22),rgba(14,52,60,.5)) !important;border-color:#25f6c9 !important}',
 '.trn-top h1,.imp-title,.qm-h,.imp-h,.thi-h{color:#8ffce4 !important}',
 '.trn-btn{border-radius:999px !important}','.gold{color:#ffd166 !important}'
-].join('\\n');
+].join('\n');
 
 var st = document.createElement('style');
 st.id = 'fc27-skin-css';
