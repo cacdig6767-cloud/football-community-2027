@@ -38814,6 +38814,7 @@ function flag(code, w){
   try { if (window.IntlCup && IntlCup.flagSVG) return '<span class="trn-flag">' + IntlCup.flagSVG(code, w || 22, 14) + '</span>'; } catch (e) {}
   return '';
 }
+/* memo: lookup de escudo por equipo — evita recomputar 260 veces por pintado */
 var _crestMemo = {};
 function crestHtml(name){
   if (name in _crestMemo) return _crestMemo[name];
@@ -38901,7 +38902,7 @@ function renderBuilder(){
        DIFFS.map(function(o){ return '<option value="' + o[0] + '"' + (cfg.diff === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div></div>';
 
   h += '<p class="trn-lbl">Equipos: ' + n + ' seleccionados' + (n < 4 ? ' <b style="color:#ff9b9b">(mínimo 4)</b>' : '') + '</p>';
-  h += '<div class="trn-row"><div style="flex:2;min-width:220px"><input class="trn-inp" placeholder="🔍 buscar club o país…" value="' + esc(B.q) + '" oninput="TorneosUI.search(this.value)"></div>' +
+  h += '<div class="trn-row"><div style="flex:2;min-width:220px"><input class="trn-inp" id="trn-search" placeholder="🔍 buscar club o país…" value="' + esc(B.q) + '" oninput="TorneosUI.search(this.value)"></div>' +
        '<div style="flex:none;display:flex;gap:6px">' +
        [['all','👥 Todos'],['club','🏟️ Clubes'],['sel','🌍 Selecciones']].map(function(o){ return '<button type="button" class="trn-ktab' + (B.kind === o[0] ? ' on' : '') + '" onclick="TorneosUI.kind(\'' + o[0] + '\')">' + o[1] + '</button>'; }).join('') + '</div>' +
        '<div style="flex:none;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
@@ -39239,8 +39240,15 @@ return {
   newBuilder: newBuilder, startPreset: startPreset, create: create,
   continueLast: continueLast, deleteSave: deleteSave,
   toggle: function(id){ if (B.ids[id]) delete B.ids[id]; else B.ids[id] = 1; renderBuilder(); },
-  _srchT: 0,
-  search: function(q){ B.q = q; clearTimeout(TorneosUI._srchT); TorneosUI._srchT = setTimeout(renderBuilder, 160); },
+  search: function(q){
+    B.q = q;
+    clearTimeout(B._sq);
+    B._sq = setTimeout(function(){
+      renderBuilder();
+      var inp = el('trn-search');
+      if (inp){ inp.focus(); try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch (e) {} }
+    }, 180);
+  },
   kind: function(k){ B.kind = k; renderBuilder(); },
   autoKindSet: function(v){ B.autoKind = (v === 'sel' ? 'sel' : 'club'); },
   autoModeSet: function(v){ B.autoMode = (v === 'rank' ? 'rank' : 'rand'); },
@@ -40085,7 +40093,42 @@ function brand(){
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', brand);
 else brand();
 
-window.FC27SKIN = { version: '1.1' };
+/* ── popup de novedades: aparece una vez por versión desplegada ─────────────
+   Mantener: al soltar un deploy toca subir BUILD para que reaparezca. */
+var BUILD = 'v6.4.2';
+var NEWS = [
+  'Partido Rápido: flechas ‹ › y botón JUGAR reparados al 100%',
+  'Creador de torneos: ✨ +8 auto con filtro club/selección y por rating',
+  'Duelo por defecto: FC Barcelona vs Real Madrid',
+  'Más fluidez: búsquedas, listas y fondos cacheados (menos trabas)',
+  'Fondo póster EA FC27 en la carga y el menú'
+];
+function newsPopup(){
+  try { if (typeof localStorage !== 'undefined' && localStorage.getItem('fc27_seen_build') === BUILD) return; } catch (e) {}
+  function show(){
+    if (document.getElementById('fc27-news-go')) return;
+    if (document.getElementById('loading-screen')) { setTimeout(show, 500); return; }
+    var c = document.createElement('div');
+    c.id = 'fc27-news';
+    c.setAttribute('role', 'dialog');
+    c.setAttribute('style', 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:99995;box-sizing:border-box;max-width:92vw;width:400px;background:linear-gradient(165deg,rgba(17,48,64,.94),rgba(7,21,36,.95));border:1px solid rgba(64,220,200,.4);border-radius:20px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.55);font-family:system-ui,sans-serif;color:#eafffb;backdrop-filter:blur(8px)');
+    c.innerHTML = '<div style="font-weight:900;font-size:14px;letter-spacing:1px;color:#8ffce4;margin-bottom:8px">🎉 ACTUALIZACIÓN ' + BUILD + '</div>' +
+      '<ul style="margin:0 0 10px;padding-left:18px;font-size:12.5px;line-height:1.65;color:#d6f4ea">' +
+      NEWS.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul>' +
+      '<button id="fc27-news-go" style="background:linear-gradient(180deg,#25f6c9,#0ec2a0);border:none;border-radius:999px;color:#04241c;font-weight:900;font-size:13px;padding:10px 26px;cursor:pointer;box-shadow:0 8px 22px rgba(37,246,201,.3);width:100%">¡A JUGAR! ⚽</button>';
+    (document.body || document.documentElement).appendChild(c);
+    var go = document.getElementById('fc27-news-go');
+    if (go) go.onclick = function () {
+      try { localStorage.setItem('fc27_seen_build', BUILD); } catch (e) {}
+      if (c.parentNode) c.parentNode.removeChild(c);
+    };
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(show, 900); });
+  else setTimeout(show, 900);
+}
+newsPopup();
+
+window.FC27SKIN = { version: '1.2', build: BUILD };
 })();
 
 </script>

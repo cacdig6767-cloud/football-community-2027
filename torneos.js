@@ -48,14 +48,6 @@ function dbFull(){
   return { clubs: clubs, sels: sels };
 }
 var SYN = {}, SYN_LIST = [];
-function teamColors(team){
-  if (!_tcMemo || !team) return teamColorsRaw(team);
-  var hit = _tcMemo.get(team);
-  if (hit) return hit;
-  var v = teamColorsRaw(team);
-  _tcMemo.set(team, v);
-  return v;
-}
 function teamById(id){
   if (SYN[id]) return SYN[id];
   var d = db(), i, all = d.clubs.concat(d.sels);
@@ -119,8 +111,7 @@ function mkRoster(team){
 
 /* ── colores (uniformes a la cancha) ── */
 var PAL = [['#b03030','#1d1d2f'],['#2255aa','#f5f5f5'],['#1a7a3d','#f5f5f5'],['#d8a018','#16161e'],['#6b21a8','#f5f5f5'],['#0f766e','#f5f5f5'],['#c2410c','#16161e'],['#334155','#f5c451'],['#8e2f5c','#f5f5f5'],['#28506e','#f5c451']];
-var _tcMemo = (typeof WeakMap !== 'undefined') ? new WeakMap() : null;
-function teamColorsRaw(team){
+function teamColors(team){
   try {
     if (team.kind === 'sel') {
       var FL = (window.IntlCup && IntlCup.FL_SVG) || {}, d = FL[team.code];
