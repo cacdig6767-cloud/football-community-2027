@@ -39698,10 +39698,21 @@ function venueSw(v, isFut) {
 }
 
 /* ── chooser estilo Classic Match (paneles HOME / AWAY) ─────────────────── */
+/* caché del listado de clubes: el pool no cambia durante la sesión; sin esto
+   cada render/arroclic re-escaneaba miles de fichas (lag en teléfonos viejos) */
+var _clubMemo = { pool: null, len: -1, list: null };
+function clubsListFast() {
+  var p = pool();
+  if (_clubMemo.pool === p && _clubMemo.list && _clubMemo.len === (p ? p.length : 0)) return _clubMemo.list;
+  _clubMemo.pool = p;
+  _clubMemo.len = p ? p.length : 0;
+  _clubMemo.list = clubsList();
+  return _clubMemo.list;
+}
 function listFor(kind) {
   return kind === 'nat'
     ? NATIONS.map(function (n) { return n.n; })
-    : clubsList().slice(0, 80).map(function (x) { return x.n; });
+    : clubsListFast().slice(0, 80).map(function (x) { return x.n; });
 }
 function teamRate(name, kind) {
   var hit;
@@ -39709,7 +39720,7 @@ function teamRate(name, kind) {
     hit = NATIONS.filter(function (n) { return n.n === name; })[0];
     return hit ? hit.r : 80;
   }
-  hit = clubsList().filter(function (c) { return c.n === name; })[0];
+  hit = clubsListFast().filter(function (c) { return c.n === name; })[0];
   return hit ? hit.best : 78;
 }
 function stars(r) {
@@ -39844,7 +39855,7 @@ function wire(body, c) {
       store(); render();
     };
   });
-  root.querySelectorAll('[data-qmcy]').forEach(function (el) {
+  body.querySelectorAll('[data-qmcy]').forEach(function (el) {
     el.setAttribute('role', 'button');
     el.onclick = function () {
       var kv = (el.getAttribute('data-qmcy') || '').split(':');
