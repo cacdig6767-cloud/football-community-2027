@@ -38814,12 +38814,16 @@ function flag(code, w){
   try { if (window.IntlCup && IntlCup.flagSVG) return '<span class="trn-flag">' + IntlCup.flagSVG(code, w || 22, 14) + '</span>'; } catch (e) {}
   return '';
 }
+var _crestMemo = {};
 function crestHtml(name){
+  if (name in _crestMemo) return _crestMemo[name];
+  var out = '';
   try {
     var u = (typeof CRESTS !== 'undefined' && CRESTS[name]) ? CRESTS[name] : null;
-    if (u) return '<img loading="lazy" class="trn-crest" src="' + u + '" alt="">';
+    if (u) out = '<img loading="lazy" class="trn-crest" src="' + u + '" alt="">';
   } catch (e) {}
-  return '';
+  _crestMemo[name] = out;
+  return out;
 }
 function badge(id){
   var t = TOURNEOS.teamById(id); if (!t) return '<span>?</span>';
@@ -39235,7 +39239,8 @@ return {
   newBuilder: newBuilder, startPreset: startPreset, create: create,
   continueLast: continueLast, deleteSave: deleteSave,
   toggle: function(id){ if (B.ids[id]) delete B.ids[id]; else B.ids[id] = 1; renderBuilder(); },
-  search: function(q){ B.q = q; renderBuilder(); },
+  _srchT: 0,
+  search: function(q){ B.q = q; clearTimeout(TorneosUI._srchT); TorneosUI._srchT = setTimeout(renderBuilder, 160); },
   kind: function(k){ B.kind = k; renderBuilder(); },
   autoKindSet: function(v){ B.autoKind = (v === 'sel' ? 'sel' : 'club'); },
   autoModeSet: function(v){ B.autoMode = (v === 'rank' ? 'rank' : 'rand'); },
