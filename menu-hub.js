@@ -118,7 +118,7 @@ function build() {
   });
   hub.innerHTML = bgs +
     '<div class="mh-scrim"></div>' +
-    '<div class="mh-logo">FC <i>27</i></div>' +
+    '<div class="mh-logo"><img src="assets/fc27-logo.png?v=3" alt="FC 27" style="height:34px;width:auto;filter:drop-shadow(0 4px 14px rgba(30,130,255,.45));"></div>' +
     '<div class="mh-hubtag">FC HUB · PC</div>' +
     '<div class="mh-nav"></div>' +
     '<div class="mh-panel">' +

@@ -215,6 +215,19 @@ const crypto2 = require('crypto');
 function hash2(p) { return crypto2.createHash('md5').update(fs.readFileSync(p)).digest('hex'); }
 t(hash2(__dirname + '/menu-hub.js') === hash2(__dirname + '/football-community-2027/menu-hub.js'), 'menu-hub.js raíz ↔ espejo idénticos');
 
+/* 20· 🖼️ logo nuevo FC27: assets, referencias y espejos */
+function pngOK(p) { if (!fs.existsSync(p)) return false; const b = fs.readFileSync(p).slice(0, 8); return b.length === 8 && b[0] === 0x89 && b[1] === 0x50; }
+t(['fc27-logo.png','favicon.png','apple-touch-icon.png'].every(f => pngOK(__dirname + '/assets/' + f) && pngOK(__dirname + '/football-community-2027/assets/' + f)), '3 assets de logo PNG válidos en raíz y espejo');
+t(idxSrc2.includes('assets/favicon.png?v=3') && idxSrc2.includes('assets/apple-touch-icon.png?v=3') && !idxSrc2.includes('?v=2'), 'index: favicon/apple-touch-icon con cache-buster v3 (adiós favicon roto)');
+t((idxSrc2.match(/fc27-logo\.png\?v=3/g) || []).length >= 4, 'index: logo nuevo en splash + título (×2) + barra superior + hub inline (' + (idxSrc2.match(/fc27-logo\.png\?v=3/g) || []).length + ' usos)');
+const fc272 = fs.readFileSync(__dirname + '/fc27.html', 'utf8');
+t(fc272 === idxSrc2 || fc272.includes('fc27-logo.png?v=3'), 'fc27.html comparte el logo nuevo');
+const carr3 = fs.readFileSync(__dirname + '/carrera-jugador.html', 'utf8');
+const ut3 = fs.readFileSync(__dirname + '/ultimate-team.html', 'utf8');
+t(carr3.includes('assets/favicon.png?v=3') && ut3.includes('assets/favicon.png?v=3'), 'Carrera y UT por fin tienen favicon (antes ninguno)');
+t(mhSrc.includes('fc27-logo.png?v=3'), 'menu-hub.js usa la imagen del logo en vez de texto');
+
+
 
 
 console.log('');
