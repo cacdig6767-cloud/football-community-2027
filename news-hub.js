@@ -382,16 +382,20 @@ var API = {
     return null;
   },
   pressQuestion: function (s) {
-    /* inyecta en la rueda de prensa del MÁNAGER una pregunta por el rumor vivo */
+    /* pregunta de rumor SOLO si toca TU club — nunca humo de estrellas ajenas (fix "¿Rüdiger al Barça?") */
     var hub = ensure(s); if (!hub) return null;
     var live = API.rumorLive(s); if (!live || live.type !== 'mgr') return null;
-    var um = live.item.rum;
+    var um = live.item.rum, mine = (s && s.myTeam) || '';
+    if (!mine || (um.from !== mine && um.to !== mine)) return null;
+    var q = (um.to === mine)
+      ? '🗞️ En la sala todos tienen el móvil en la mano: el News Hub asegura que «' + um.star + '» ficharía por tu ' + mine + '. ¿Lo confirmas?'
+      : '🗞️ La sala arde: el News Hub dice que «' + um.star + '» saldría de tu ' + mine + ' rumbo al ' + um.to + '. ¿Qué respondes?';
     return {
-      ctx: 'RUMOR', q: '🗞️ En la sala de prensa todos tienen el móvil en la mano: ¿Es cierto lo que dice el News Hub de ' + um.star + ' y el ' + um.to + '?',
+      ctx: 'RUMOR', q: q,
       opts: [
-        { t: 'Confirmarlo con una sonrisa', morale: 2, conf: -2, fb: (um.truth ? 'La sala te cree. Detrás del telón asienten: acertaste.' : 'Cuidado, míster… eso era humo y la redacción lo publicará mañana ("¿sabe algo que nadie sabe?").') },
-        { t: 'Negarlo tajante', morale: 1, conf: 0, fb: (um.truth ? 'Los periodistas fruncen el ceño… y tres semanas después pondrán tu foto en la oficial ("nos mintió").' : 'Desmentida oficial que le hizo ganar ' + 4 + ' puntos con la prensa seria. Bien dicho.') },
-        { t: 'Bromear y no contestar', morale: -1, conf: -1, fb: 'Risas flacas en la sala. El titular de mañana: "El míster ni confirma ni desmiente".' }
+        { t: 'Confirmarlo con una sonrisa', morale: 2, conf: -2, fb: (um.truth ? 'La sala te cree. Detrás del telón asienten: acertaste.' : 'Cuidado, míster… era humo y mañana publicarán "¿sabe algo que nadie sabe?".') },
+        { t: 'Negarlo tajante', morale: 1, conf: 0, fb: (um.truth ? 'Los periodistas fruncen el ceño… y cuando salga la oficial te colgarán el cartel de "nos mintió".' : 'Desmentida oficial que le hace ganar puntos a tu club con la prensa seria. Bien dicho.') },
+        { t: 'Bromear y no contestar', morale: -1, conf: -1, fb: 'Risas flacas en la sala. Titular de mañana: "El míster ni confirma ni desmiente".' }
       ]
     };
   },
@@ -421,24 +425,64 @@ var API = {
           ]
         });
       }
+      /* 🎙️ press-bank.js — banco contextual del JUGADOR: miles de preguntas, siempre sobre TI y tu club */
       var nota = s.lastRating || 6.8;
-      qs.push({
-        q: nota >= 7 ? '🎙️ "Hoy fuiste de lo mejor del partido. ¿Te sientes en tu mejor momento?"' : '🎙️ "El rendimiento de esta semana… ¿te preocupa?"',
-        opts: nota >= 7 ? [
-          { t: '"Mejor que nunca… y va a más."', fb: 'Sonrisa del capitán. Confianza y foco, campeón.', mo: 3 },
-          { t: '"Sin fiesta hasta el título."', fb: 'Seriedad de líder. La afición repite la frase en TikTok.', mo: 2 }
-        ] : [
-          { t: '"Trabajo doble esta semana. Prometido."', fb: 'Respuesta de profesional. El míster asiente en la sala.', mo: 2 },
-          { t: '"Es un bache. Volveré mejor."', fb: 'Honesto, sin drama. La crítica baja un punto la metralla.', mo: 1 }
-        ]
-      });
-      qs.push({ q: '🎙️ "¿Cómo está el vestuario estas semanas?"', opts: [
-        { t: '"Unidos. Como una familia."', fb: 'Puño con la prensa incluido. El grupo agradece la foto.', mo: 2 },
-        { t: '"Hay que exigirse más."', fb: 'Exigencia sana. El capitán ladea la ceja, con cariño.', mo: 1 }
-      ] });
+      var bankN = 0;
+      if (typeof PRESSBANK !== 'undefined') {
+        try {
+          var ctxP = ctxOf('pl', s);
+          var rawClub = ctxP.myClub;
+          var clubN = (typeof rawClub === 'string' && rawClub) ? rawClub : ((rawClub && rawClub.name) || ((s.club && s.club.name) || 'tu club'));
+          var rivalP = 'el próximo rival';
+          try {
+            var LD = (typeof LEAGUES_DB !== 'undefined') ? LEAGUES_DB : null;
+            var lk = (s.club && s.club.lk) || s.lk || null;
+            var tmArr = (LD && lk && LD[lk] && (LD[lk].teams || LD[lk].clubs)) || null;
+            if (tmArr && tmArr.length > 1) {
+              for (var tr = 0; tr < 10; tr++) {
+                var cand = tmArr[R(tmArr.length)];
+                var cname = (typeof cand === 'string') ? cand : (cand.name || cand[0] || '');
+                if (cname && cname !== clubN) { rivalP = cname; break; }
+              }
+            }
+          } catch (eRv) {}
+          var want = nota >= 7 ? 'glory' : (nota < 6 ? 'crisis' : 'routine');
+          var dP = { me: me, club: clubN, rival: rivalP, pos: (s.pos || 'futbolista'), edad: (s.age != null ? s.age : '19'), liga: 'la liga', nota: nota };
+          var bQS = PRESSBANK.plQS(dP);
+          var poolMain = bQS.filter(function (q) { return q.ctx === want; });
+          var poolRou  = bQS.filter(function (q) { return q.ctx === 'routine'; });
+          if (poolMain.length) { qs.push(poolMain[R(poolMain.length)]); bankN++; }
+          if (poolRou.length) {
+            var p1 = poolRou[R(poolRou.length)];
+            qs.push(p1); bankN++;
+            if (poolRou.length > 1) {
+              var p2 = p1, g2 = 0;
+              while (p2 === p1 && g2 < 10) { p2 = poolRou[R(poolRou.length)]; g2++; }
+              if (p2 !== p1) { qs.push(p2); bankN++; }
+            }
+          }
+        } catch (ePB) {}
+      }
+      if (!bankN) {
+        /* fallback legado (si press-bank.js no cargó) */
+        qs.push({
+          q: nota >= 7 ? '🎙️ "Hoy fuiste de lo mejor del partido. ¿Te sientes en tu mejor momento?"' : '🎙️ "El rendimiento de esta semana… ¿te preocupa?"',
+          opts: nota >= 7 ? [
+            { t: '"Mejor que nunca… y va a más."', fb: 'Sonrisa del capitán. Confianza y foco, campeón.', mo: 3 },
+            { t: '"Sin fiesta hasta el título."', fb: 'Seriedad de líder. La afición repite la frase en TikTok.', mo: 2 }
+          ] : [
+            { t: '"Trabajo doble esta semana. Prometido."', fb: 'Respuesta de profesional. El míster asiente en la sala.', mo: 2 },
+            { t: '"Es un bache. Volveré mejor."', fb: 'Honesto, sin drama. La crítica baja un punto la metralla.', mo: 1 }
+          ]
+        });
+        qs.push({ q: '🎙️ "¿Cómo está el vestuario estas semanas?"', opts: [
+          { t: '"Unidos. Como una familia."', fb: 'Puño con la prensa incluido. El grupo agradece la foto.', mo: 2 },
+          { t: '"Hay que exigirse más."', fb: 'Exigencia sana. El capitán ladea la ceja, con cariño.', mo: 1 }
+        ] });
+      }
       /* modal encadenado con el modal nativo del jugador */
       var html = '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:#f5c451">🎙️ RUEDA DE PRENSA</div>' +
-        '<div style="font-size:.78rem;color:#aeb8d8;margin:4px 0 12px">Sala mixta · micrófondos de 6 medios · ' + esc(me) + '</div></div>';
+        '<div style="font-size:.78rem;color:#aeb8d8;margin:4px 0 12px">Sala mixta · micrófonos de 6 medios · ' + esc(me) + '</div></div>';
       var ask = function (ix) {
         if (ix >= qs.length) {
           if (left > 1) setTimeout(function () { API.pressPlayer(s, left - 1, true); }, 420);   /* 🎙️ sesión siguiente en cadena */

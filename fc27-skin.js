@@ -137,13 +137,14 @@ else brand();
 
 /* ── popup de novedades: aparece una vez por versión desplegada ─────────────
    Mantener: al soltar un deploy toca subir BUILD para que reaparezca. */
-var BUILD = 'v6.5';
+var BUILD = 'v6.7';
 var NEWS = [
-  'Nueva INTERFAZ EA HUB para PC (botón 🖥️ UI arriba a la derecha del menú): fondo vivo por modo con transición suave',
-  'Optimización fuerte: menús ~100× más ligeros, sin lag en móviles',
-  'Creador de torneos: ✨ +8 auto con filtro club/selección y por rating',
-  'El Clásico por defecto en Partido Rápido (flechas ‹ › y JUGAR reparados)',
-  'Fondo póster EA FC27 en la carga y el menú'
+  '🛠️ <strong>JUGADORES REALES DONDE TOCABA</strong>: en Torneos (¡Champions incluida!) los clubes reales salen con su plantilla auténtica — el Barça con Lamine y Pedri, el Madrid con Mbappé… — y las selecciones con nombres reales completos. Y al <b>CREAR TU CLUB</b> en Carrera Manager heredas la plantilla REAL del equipo sustituido (la vista previa del asistente también).',
+  '🎙️ <strong>RUEDAS DE PRENSA RENOVADAS</strong> (Manager y Jugador): miles de preguntas distintas, siempre sobre <b>TU club</b> — tu próximo rival, tu estrella, tu cantera, tu racha… Se acabó eso de que te pregunten por fichajes de equipos que no son los tuyos. Y con respuestas que mueven moral y confianza.',
+  '⭐ <strong>EVENTO CHAMPIONS en Ultimate Team</strong>: 16 cartas con arte propio UCL 25/26 (99-108) y sobre propio en la tienda (12.000 💰).',
+  '⛓️ <strong>EVENTO BLUE LOCK</strong>: Rin, Kaiser, Sae, Nagi, Bachira, Barou, Chigiri, Loki, Bunny y Gagamaru — 10 cartas prismáticas del anime (101-108).',
+  '🌈 <strong>EMMANUEL 119</strong>: la carta del barrio — chase card arcoíris oculta en ambos sobres nuevos (1% por carta) y canjeable directa con el código <b>EMMANUEL119</b>. #22 Honduras 🇭🇳',
+  '🎟️ Códigos nuevos del evento en UT: <b>CHAMPIONSX</b> (+2.500💰) y <b>EGOISTA</b> (+1.500💰).'
 ];
 var Sfn = null;
 function newsPopup(){
@@ -173,7 +174,7 @@ function newsPopup(){
 newsPopup();
 
 window.FC27SKIN = {
-  version: '1.3', build: BUILD,
+  version: '1.5', build: BUILD,
   /* pruebas/harness: forzar la tarjeta de novedades (showNews) */
   showNews: function () { try { if (Sfn) Sfn(); } catch (e) {} }
 };

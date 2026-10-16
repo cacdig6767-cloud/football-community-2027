@@ -1,5 +1,6 @@
 /* FC 2027 · v7.0.0 · nacionalidades reales ESPN citizenship — tools/fetch_nat3.py */
 window.PLAYERS_NAT = {
+ 'Emmanuel':'hon',
  'Aaron Long':'usa',
  'Aaron Martín':'esp',
  'Aaron Mejía':'mex',
@@ -4261,6 +4262,7 @@ window.PLAYERS_NAT = {
  'İsmail Yüksek':'tur'
 };
 window.PLAYERS_NNAT = {
+ 'emmanuel':'hon',
  'aaronlong':'usa',
  'aaronmartin':'esp',
  'aaronmejia':'mex',

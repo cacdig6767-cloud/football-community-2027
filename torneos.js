@@ -96,8 +96,101 @@ function pickName(team, used){
   }
   nm = nm + ' ' + INI[(Math.random() * INI.length) | 0] + '.'; used[nm] = 1; return nm;
 }
+/* ── v6.6 · PLANTILLAS REALES en Torneos: clubes con datos (REAL_PLAYERS_POOL) salen con
+     SU plantilla auténtica; selecciones usan nombres reales completos (PLAYERS_NAT) ── */
+var _rpIdx = null;
+function rpIndex(){
+  if (_rpIdx) return _rpIdx;
+  _rpIdx = {};
+  var RP = null;
+  try { RP = (typeof REAL_PLAYERS_POOL !== 'undefined') ? REAL_PLAYERS_POOL : (window.REAL_PLAYERS_POOL || null); } catch (e) { RP = null; }
+  if (RP && RP.length){
+    for (var i = 0; i < RP.length; i++){
+      var r = RP[i];
+      if (!r || !r[0] || !r[4]) continue;
+      (_rpIdx[r[4]] || (_rpIdx[r[4]] = [])).push(r);
+    }
+  }
+  return _rpIdx;
+}
+function foldPosRP(p){
+  p = String(p || '').toUpperCase();
+  if (p === 'GK' || p === 'POR') return 'POR';
+  if (p === 'DF' || p === 'DEF') return 'DF';
+  if (p === 'MF' || p === 'MED') return 'MC';
+  return 'DL';
+}
+function realRoster(team){
+  var i;
+  /* clubes reales: plantilla auténtica si el club tiene 11+ fichas reales */
+  if (team.kind === 'club'){
+    var all = rpIndex()[team.name] || [];
+    if (all.length){
+      var mine = all.filter(function(r){ return !r[5] || r[5] === team.lg; });
+      if (mine.length < 11 && all.length >= 11) mine = all; /* respaldo por nombre puro */
+      if (mine.length >= 11){
+        var gks = [], field = [], seen = {};
+        mine.slice().sort(function(a, b){ return (b[2] | 0) - (a[2] | 0); }).forEach(function(r){
+          if (seen[r[0]]) return; seen[r[0]] = 1;
+          var pos = foldPosRP(r[1]);
+          var it = { n: String(r[0]).slice(0, 16), r: clamp(r[2] | 0, 55, 116), p: pos };
+          (pos === 'POR' ? gks : field).push(it);
+        });
+        var out = [];
+        if (gks[0]) out.push(gks[0]);
+        if (gks[1]) out.push(gks[1]);
+        for (i = 0; i < field.length && out.length < 18; i++) out.push(field[i]);
+        /* relleno ficticio si la plantilla real viene corta */
+        if (out.length < 18){
+          var used = {}; out.forEach(function(f){ used[f.n] = 1; });
+          var base = clamp(team.r || 80, 60, 99), porN = 0, k = 0;
+          out.forEach(function(f){ if (f.p === 'POR') porN++; });
+          var fillPos = ['POR','DF','MC','DF','MC','DL'];
+          while (out.length < 18){
+            var pp = (porN < 2) ? 'POR' : fillPos[(k++) % fillPos.length];
+            if (pp === 'POR') porN++;
+            out.push({ n: pickName(team, used).slice(0, 14), r: clamp(Math.round(base + (Math.random() * 2 - 1) * 8), 55, 116), p: pp });
+          }
+        }
+        if (out.filter(function(f){ return f.p === 'POR'; }).length < 1) return null;
+        return out;
+      }
+    }
+    return null;
+  }
+  /* selecciones: nombres reales completos del país */
+  if (team.kind === 'sel'){
+    var NN = null;
+    try { NN = window.PLAYERS_NAT || null; } catch (e2) { NN = null; }
+    if (!NN) return null;
+    var names = [];
+    for (var key in NN) if (NN[key] === team.code) names.push(key);
+    if (names.length < 11) return null;
+    shuffle(names);
+    var used2 = {}, out2 = [],
+        spots = ['POR','POR','DF','DF','DF','DF','DF','DF','MC','MC','MC','MC','MC','MC','DL','DL','DL','DL'],
+        base2 = clamp(team.r || 80, 60, 99);
+    for (i = 0; i < spots.length; i++){
+      var nm;
+      if (i < names.length){
+        nm = String(names[i]).slice(0, 16);
+        if (used2[nm]) nm = pickName(team, used2).slice(0, 14);
+      } else {
+        nm = pickName(team, used2).slice(0, 14);
+      }
+      used2[nm] = 1;
+      var spread = (spots[i] === 'POR') ? 4 : 8;
+      out2.push({ n: nm, r: clamp(Math.round(base2 + (Math.random() * 2 - 1) * spread), 55, 116), p: spots[i] });
+    }
+    return out2;
+  }
+  return null;
+}
+
 /* plantilla 18: 2 POR + 6 DF + 6 MC + 4 DL, ratings alrededor del equipo */
 function mkRoster(team){
+  var real66 = realRoster(team);
+  if (real66) return real66;
   var used = {}, out = [], i,
       base = clamp(team.r || 80, 60, 99),
       spots = ['POR','POR','DF','DF','DF','DF','DF','DF','MC','MC','MC','MC','MC','MC','DL','DL','DL','DL'];

@@ -173,6 +173,8 @@ canvas#share{display:none}
 @media (prefers-reduced-motion: reduce) {
   .screen.on > *, .logline, .cpop-big, .cpop-title, .cpop-cup, .cpop-sub, .badge.y::after, .title-hero, .dec-h, .btn { animation:none !important; transition:none !important; }
 }
+<style>/* respeta prefers-reduced-motion: en móviles modestos corta las animaciones infinitas */
+@media (prefers-reduced-motion: reduce){ *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important; } }</style>
 </style>
 </head>
 <body>
@@ -345,7 +347,7 @@ canvas#share{display:none}
   <!-- ========== RETIRO ========== -->
   <div class="screen" id="scr-retire">
     <div id="retire-body"></div>
-    <img id="sharePreview" alt="Resumen de carrera">
+    <img loading="lazy" id="sharePreview" alt="Resumen de carrera">
     <div class="row" style="margin-top:10px">
       <button class="btn gold" id="btn-share" onclick="UI.makeImage()">📸 Generar imagen</button>
     </div>
@@ -711,7 +713,7 @@ var PLAYSTYLE_ICON = {'Tiroletazo':'can','Sniper':'lon','Penal killer':'p1t','Vo
 function pcPSIco(name, sm) {
   try {
     var id = PLAYSTYLE_ICON[name], ic = id && window.PSICON && window.PSICON[id];
-    if (ic) return '<img class="pcps-ico' + (sm ? '-sm' : '') + '" data-ps-id="' + id + '" data-ps-lvl="2" data-ps-name="' + name + '" data-ps-desc="' + (PLAYSTYLES[name] ? PLAYSTYLES[name].d : '') + '" src="' + ic.g + '" alt="' + name + '">';
+    if (ic) return '<img loading="lazy" class="pcps-ico' + (sm ? '-sm' : '') + '" data-ps-id="' + id + '" data-ps-lvl="2" data-ps-name="' + name + '" data-ps-desc="' + (PLAYSTYLES[name] ? PLAYSTYLES[name].d : '') + '" src="' + ic.g + '" alt="' + name + '">';
   } catch (e) {}
   return (PLAYSTYLES[name] ? PLAYSTYLES[name].e : '') ;
 }
@@ -776,7 +778,7 @@ function initialsChip(name,px){
     'background:linear-gradient(135deg,hsl('+h+',55%,32%),hsl('+h+',60%,20%));color:#fff;font-weight:800;font-size:'+Math.round(px*.38)+'px;flex:none">'+ini+'</span>';
 }
 function crestHTML(name,px){
-  if(CRESTS[name]) return '<img src="'+CRESTS[name]+'" data-n="'+esc(name)+'" data-px="'+px+'" onerror="fbImgErr(this)" style="width:'+px+'px;height:'+px+'px;object-fit:contain;flex:none" alt="">';
+  if(CRESTS[name]) return '<img loading="lazy" src="'+CRESTS[name]+'" data-n="'+esc(name)+'" data-px="'+px+'" onerror="fbImgErr(this)" style="width:'+px+'px;height:'+px+'px;object-fit:contain;flex:none" alt="">';
   return initialsChip(name,px);
 }
 function fbImgErr(img){ try{ img.outerHTML = initialsChip(img.dataset.n||'FC', parseInt(img.dataset.px||'32')); }catch(e){} }
@@ -1443,7 +1445,7 @@ function migrateSave(s){
 function logoHTML(lk,px){
   var L=LEAGUES_DB[lk]; if(!L) return '';
   var u=LEAGUE_LOGOS[L.name];
-  if(u) return '<img src="'+u+'" data-px="'+px+'" data-flag="'+L.flag+'" onerror="fbLgErr(this)" style="width:'+px+'px;height:'+px+'px;object-fit:contain;flex:none" alt="">';
+  if(u) return '<img loading="lazy" src="'+u+'" data-px="'+px+'" data-flag="'+L.flag+'" onerror="fbLgErr(this)" style="width:'+px+'px;height:'+px+'px;object-fit:contain;flex:none" alt="">';
   return '<span style="font-size:'+px+'px">'+L.flag+'</span>';
 }
 function LEGUES_SAFE(o){ try{ return LEAGUES_DB[o.lk].name+' · nivel '+o.r; }catch(e){ return 'nivel '+o.r; } }
@@ -3148,6 +3150,7 @@ if(typeof document!=='undefined'){
 }
 if(typeof module!=='undefined' && module.exports){ module.exports={selfTestRun:selfTestRun, LEAGUES_DB:LEAGUES_DB, newCareer:newCareer}; }
 </script>
+<script src="press-bank.js"></script>
 <script src="news-hub.js"></script>
 <script id="fc27-skin-inline">
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -3289,13 +3292,13 @@ else brand();
 
 /* ── popup de novedades: aparece una vez por versión desplegada ─────────────
    Mantener: al soltar un deploy toca subir BUILD para que reaparezca. */
-var BUILD = 'v6.5';
+var BUILD = 'v6.6';
 var NEWS = [
-  'Nueva INTERFAZ EA HUB para PC (botón 🖥️ UI arriba a la derecha del menú): fondo vivo por modo con transición suave',
-  'Optimización fuerte: menús ~100× más ligeros, sin lag en móviles',
-  'Creador de torneos: ✨ +8 auto con filtro club/selección y por rating',
-  'El Clásico por defecto en Partido Rápido (flechas ‹ › y JUGAR reparados)',
-  'Fondo póster EA FC27 en la carga y el menú'
+  '🛠️ <strong>JUGADORES REALES DONDE TOCABA</strong>: en Torneos (¡Champions incluida!) los clubes reales salen con su plantilla auténtica — el Barça con Lamine y Pedri, el Madrid con Mbappé… — y las selecciones con nombres reales completos. Y al <b>CREAR TU CLUB</b> en Carrera Manager heredas la plantilla REAL del equipo sustituido (la vista previa del asistente también).',
+  '⭐ <strong>EVENTO CHAMPIONS en Ultimate Team</strong>: 16 cartas con arte propio UCL 25/26 (99-108) y sobre propio en la tienda (12.000 💰).',
+  '⛓️ <strong>EVENTO BLUE LOCK</strong>: Rin, Kaiser, Sae, Nagi, Bachira, Barou, Chigiri, Loki, Bunny y Gagamaru — 10 cartas prismáticas del anime (101-108).',
+  '🌈 <strong>EMMANUEL 119</strong>: la carta del barrio — chase card arcoíris oculta en ambos sobres nuevos (1% por carta) y canjeable directa con el código <b>EMMANUEL119</b>. #22 Honduras 🇭🇳',
+  '🎟️ Códigos nuevos del evento en UT: <b>CHAMPIONSX</b> (+2.500💰) y <b>EGOISTA</b> (+1.500💰).'
 ];
 var Sfn = null;
 function newsPopup(){
@@ -3325,7 +3328,7 @@ function newsPopup(){
 newsPopup();
 
 window.FC27SKIN = {
-  version: '1.3', build: BUILD,
+  version: '1.4', build: BUILD,
   /* pruebas/harness: forzar la tarjeta de novedades (showNews) */
   showNews: function () { try { if (Sfn) Sfn(); } catch (e) {} }
 };
