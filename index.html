@@ -2482,6 +2482,14 @@ input[type="range"]{accent-color:#00ff87}
     </div>
     <div class="content-area">
         <h2 class="section-title">Configuración</h2>
+        <div class="fc27-card" style="max-width:640px;" id="hubui-card-g">
+            <h3 class="fc27-h">🖥️ Gráficos de UI del menú</h3>
+            <p class="fc27-dim" style="margin-bottom:12px;">El hub estilo EA (lista vertical, fondos vivos, modo horizontal) se activa solo en PC. Aquí puedes <b>forzarlo para probarlo en tu celular</b> — pon el teléfono en horizontal para la experiencia completa.</p>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <span id="hubui-label-g" class="fc27-dim" style="font-weight:700;"></span>
+                <button class="btn-secondary" onclick="Mobile.cycleHub()">Cambiar modo</button>
+            </div>
+        </div>
         <div class="fc27-card" style="max-width:640px;" id="theme-card">
     <h3 class="fc27-h">🎨 Colores del juego · Personalización</h3>
     <p class="fc27-dim" style="margin-bottom:12px;">Elige un tema completo o afina los colores uno a uno: acento principal, oro, alertas, fondo y paneles. <b>Tu fondo genera su propio degradado y re-tiñe también la foto del menú.</b> Se aplica <strong>en vivo</strong> a TODO el juego — menú, carrera y hasta el <b>Ultimate Team</b> (es el mismo universo) — y se recuerda para siempre en este navegador.</p>
@@ -21517,7 +21525,11 @@ var Mobile = {
     } catch (e) {}
   },
   syncHub: function() {
-    try { var el = document.getElementById('hubui-label'); if (el) el.textContent = this.hubDesc(); } catch (e) {}
+    try {
+      var d = this.hubDesc();
+      var e1 = document.getElementById('hubui-label'); if (e1) e1.textContent = d;
+      var e2 = document.getElementById('hubui-label-g'); if (e2) e2.textContent = d;
+    } catch (e) {}
   },
   settingsCard: function() {
     try {
@@ -21551,6 +21563,7 @@ var Mobile = {
 (function() {
   try { Mobile.load(); } catch (e) {}
   try { Mobile.buildBar(); } catch (e2) {}
+  try { Mobile.syncHub(); } catch (e0) {}
   try {
     var dash = document.getElementById('screen-dashboard');
     if (dash && !dash.classList.contains('hidden')) document.body.classList.add('in-dashboard');
