@@ -126,22 +126,86 @@ function ctxOf(mode, s) {
 }
 
 /* ════ PLANTILLAS DE PORTADA ════ */
+/* ── niveles de mercado: con QUIÉN puede hablar cada estrella (adiós "Musiala al Motagua") ── */
+var CLUB_TIER = {};
+(function () {
+  var T3 = ['Real Madrid', 'FC Barcelona', 'Manchester City', 'Arsenal', 'Liverpool', 'Bayern Múnich', 'PSG', 'Inter'];
+  var T2 = ['Atlético de Madrid', 'Manchester United', 'Chelsea', 'Juventus', 'Milan', 'Napoli', 'Borussia Dortmund', 'Bayer Leverkusen', 'Sevilla', 'Roma', 'Atalanta', 'Newcastle', 'Tottenham'];
+  var T1 = ['Girona', 'Athletic Club', 'RB Leipzig', 'Mónaco', 'Marsella', 'Lyon'];
+  T3.forEach(function (c) { CLUB_TIER[c] = 3; });
+  T2.forEach(function (c) { CLUB_TIER[c] = 2; });
+  T1.forEach(function (c) { CLUB_TIER[c] = 1; });
+})();
+function clubTier(c) { return CLUB_TIER[c] != null ? CLUB_TIER[c] : 0; }   /* resto: ligas emergentes/locales = 0 */
+function starTier(st) { return st.v >= 100 ? 3 : (st.v >= 55 ? 2 : 1); }
+function canMove(st, to, tipo) {
+  /* coherencia pura · se usa para FILTRAR cualquier rumor (catálogo y generado) */
+  var lg = leagueByClub(to), tC = clubTier(to);
+  if (tipo === 'petro') return st.v >= 38 && (lg === 'usa' || lg === 'mex');           /* maletín MLS/MX solo para veteranos/grandes */
+  if (tipo === 'prestamo') return st.v < 90 && (tC >= 1 || st.v < 35);                 /* cedidos: jóvenes baratos sí llegan a ligas humildes */
+  var tS = starTier(st);
+  if (tS === 3) return tC >= 2;                                                        /* élite solo élite/grandes */
+  if (tS === 2) return tC >= 1;                                                        /* estrellas: grandes o medios de top-5 */
+  return st.v >= 35 ? tC >= 1 : tC <= 2;                                               /* promesas baratas: mercado amplio no-élite */
+}
+
+/* ── CATÁLOGO · 104 nubes de mercado coherentes (star|destino|tipo) ── */
+var MOVES = [
+  /* 💣 BOMBAZOS élite ↔ élite */ 'Vinícius Jr|Manchester City|bombazo','Jude Bellingham|PSG|bombazo','Lamine Yamal|PSG|bombazo','Erling Haaland|Real Madrid|bombazo','Jamal Musiala|Real Madrid|bombazo','Florian Wirtz|Bayern Múnich|bombazo','Phil Foden|FC Barcelona|bombazo','Cole Palmer|Real Madrid|bombazo','Erling Haaland|FC Barcelona|bombazo','Vinícius Jr|PSG|bombazo','Jude Bellingham|Liverpool|bombazo','Lamine Yamal|Manchester City|bombazo','Jamal Musiala|Manchester City|bombazo','Cole Palmer|PSG|bombazo','Florian Wirtz|Real Madrid|bombazo','Phil Foden|Arsenal|bombazo',
+  /* 👀 interés élite → grande */ 'Vinícius Jr|Manchester United|interes','Jude Bellingham|Juventus|interes','Lamine Yamal|Chelsea|interes','Erling Haaland|Atlético de Madrid|interes','Florian Wirtz|Manchester United|interes','Cole Palmer|Napoli|interes','Phil Foden|Milan|interes',
+  /* ⭐ estrellas → élite */ 'Bukayo Saka|Real Madrid|interes','Pedri|Manchester City|subasta','Gavi|Bayern Múnich|interes','Lautaro Martínez|FC Barcelona|clausula','Rodrygo|Arsenal|subasta','Khvicha Kvaratskhelia|Liverpool|interes','Declan Rice|Bayern Múnich|interes','Nicolò Barella|Manchester City|interes','Rafael Leão|PSG|interes','Dušan Vlahović|Arsenal|interes','Harry Kane|Real Madrid|interes','Zaire-Emery|Manchester City|interes','Ousmane Dembélé|Liverpool|interes',
+  /* ⭐ estrellas → grande/media */ 'Mohamed Salah|Juventus|interes','Bruno Fernandes|Napoli|interes','Rodrygo|Chelsea|clausula','Dušan Vlahović|Manchester United|subasta','Nicolò Barella|Atlético de Madrid|interes','Rafael Leão|Chelsea|interes','Khvicha Kvaratskhelia|Manchester United|subasta','Lautaro Martínez|Atlético de Madrid|interes','Ousmane Dembélé|Borussia Dortmund|vuelta','Mohamed Salah|Roma|vuelta','Harry Kane|Tottenham|vuelta','Zaire-Emery|Mónaco|interes','Declan Rice|Newcastle|interes','Virgil van Dijk|Newcastle|interes','Nicolò Barella|RB Leipzig|interes','Rafael Leão|Tottenham|interes','Dušan Vlahović|Tottenham|interes',
+  /* 🤑 maletín MLS/MX (veteranos y grandes figuras) */ 'Mohamed Salah|Inter Miami|petro','Harry Kane|LA Galaxy|petro','Bruno Fernandes|Inter Miami|petro','Antoine Griezmann|LA Galaxy|petro','Virgil van Dijk|LAFC|petro','Ousmane Dembélé|Inter Miami|petro','Lautaro Martínez|Inter Miami|petro','Antoine Griezmann|América|petro','Bruno Fernandes|LA Galaxy|petro','Lautaro Martínez|LAFC|petro',
+  /* 💎 promesas (jóvenes/cañería sudamericana) */ 'Anthony Santos|Benfica|promesa','André Addai|Sporting CP|promesa','Anthony Santos|Ajax|promesa','André Addai|Porto|promesa','Anthony Santos|Marsella|promesa','André Addai|Sevilla|promesa','Anthony Santos|Atalanta|promesa','André Addai|RB Leipzig|promesa','Anthony Santos|Tigres|promesa','André Addai|Inter Miami|promesa','Anthony Santos|América|promesa','André Addai|Palmeiras|promesa','Pau Cubarsí|Inter|promesa','Kobbie Mainoo|Borussia Dortmund|promesa','Kobbie Mainoo|RB Leipzig|promesa','Gavi|Bayer Leverkusen|promesa',
+  /* 🔄 préstamos (jóvenes cedidos, sabor CONCACAF incluido) */ 'Pau Cubarsí|Sevilla|prestamo','Kobbie Mainoo|Girona|prestamo','Zaire-Emery|Lyon|prestamo','André Addai|Botafogo|prestamo','Anthony Santos|Racing|prestamo','André Addai|Feyenoord|prestamo','Anthony Santos|PSV|prestamo','Kobbie Mainoo|Mónaco|prestamo','Pau Cubarsí|RB Leipzig|prestamo','Anthony Santos|Olimpia|prestamo','André Addai|Motagua|prestamo',
+  /* ⚔️ subastas */ 'Florian Wirtz|Manchester City|subasta','Lautaro Martínez|Chelsea|subasta','Khvicha Kvaratskhelia|Arsenal|subasta','Nicolò Barella|Liverpool|subasta','Rafael Leão|Manchester City|subasta','Bukayo Saka|Manchester City|subasta','Gavi|Manchester City|subasta','Rodrygo|Liverpool|subasta',
+  /* 📝 cláusulas */ 'Pedri|Bayern Múnich|clausula','Jude Bellingham|Manchester City|clausula','Dušan Vlahović|Milan|clausula','Pau Cubarsí|Manchester City|clausula','Kobbie Mainoo|Tottenham|clausula','Gavi|PSG|clausula','Harry Kane|Manchester United|clausula','Declan Rice|Chelsea|clausula'
+];
+var TIPO_TXT = {
+  bombazo:  { tit: ['🔥 BOMBAZO MUNDIAL: ', '💣 TERREMOTO DE MERCADO: ', '🚨 EXCLUSIVA GLOBAL: '], bd: 'El mercado tiembla: %STAR% (%FROM%) tiene una oferta descomunal del %TO% por unos %FEE%M€. En el despacho no cuelga nadie el teléfono' },
+  interes:  { tit: ['📡 RADAR ACTIVADO: ', '👀 SEGUIMIENTO SERIO: ', '🕵️ INTERÉS CONFIRMADO: '], bd: 'El %TO% siguió a %STAR% en directo tres veces este mes. Contactos iniciales con su entorno; el %FROM% pide calma' },
+  petro:    { tit: ['🤑 MALETÍN AMERICANO: ', '💰 LA MLS MUEVE FICHA: '], bd: 'Oferta económica imposible de rechazar: %TO% pone sobre la mesa un contrato de leyenda para %STAR% (%FROM%). El entorno no lo descarta' },
+  promesa:  { tit: ['💎 JAULA DE TALENTOS: ', '🌱 PROMESA EN ÓRBITA: '], bd: 'El %TO% quiere atar YA a %STAR% (%FROM%) antes de que explote: proyectíl deportivo y minutos garantizados por ~%FEE%M€' },
+  prestamo: { tit: ['🔄 PRÉSTAMO CON OPCIÓN: ', '🧳 CEDIDO A PUNTO: '], bd: '%STAR% llegaría cedido al %TO% desde %FROM% con opción de compra y minutos asegurados. Las partes lo ven con buenos ojos' },
+  subasta:  { tit: ['⚔️ GUERRA DE OFERTAS: ', '🔨 SUBASTA ABIERTA: '], bd: 'Tres clubes pujan por %STAR% (%FROM%), pero el %TO% ha subido la apuesta a %FEE%M€. La subasta puede irse de madre este fin de semana' },
+  clausula: { tit: ['📝 CLÁUSULA EN LA MIRA: ', '💼 CLÁUSULA DE RESCISIÓN: '], bd: 'El %TO% estudia pagar la cláusula de %STAR% (%FROM%) de un plumazo: son %FEE%M€ sin negociación. En el club vendedor cruzan los dedos' },
+  vuelta:   { tit: ['🏠 REGRESO A CASA: ', '💛 VUELVE AL NIDO: '], bd: '%STAR% quiere volver a casa: el %TO% ya habló con el %FROM% para vestirle de nuevo con sus colores. La grada sueña con el anuncio' }
+};
+function starByName(n) { for (var i = 0; i < STARS.length; i++) if (STARS[i].n === n) return STARS[i]; return null; }
+
 function tplTransfer(hub, mode, s) {
-  /* FICHAJE REAL: rumor primero, y al resolver el efecto SÍ ocurre. */
+  /* FICHAJE REAL: rumor primero, y al resolver el efecto SÍ ocurre. AHORA CON COHERENCIA DE MERCADO. */
   var ctx = ctxOf(mode, s);
-  var buscan = pick(LEAGUES.filter(function (L) { return L.clubes.length > 2 && L.k !== leagueByClub(ctx.myClub) || R(4) === 0; }));
-  var destino = pick(buscan.clubes);
-  if (destino === ctx.myClub) destino = pick(buscan.clubes.filter(function (c) { return c !== ctx.myClub; })) || destino;
-  var candidatos = starPool().filter(function (st) { return st.c !== destino; });
-  var st = pick(candidatos);
+  var st = null, to = null, tipo = 'interes', tries = 0;
+  while (tries < 24 && !st) {
+    tries++;
+    var mv = pick(MOVES).split('|');
+    var cand = starByName(mv[0]);
+    if (!cand) continue;
+    if (mv[1] === cand.c || mv[1] === ctx.myClub && cand.c === ctx.myClub) continue;
+    if (mv[1] === cand.c) continue;
+    if (!canMove(cand, mv[1], mv[2])) continue;
+    st = cand; to = mv[1]; tipo = mv[2];
+  }
+  if (!st) { /* plan B generado, también filtrado por coherencia */
+    tipo = 'prestamo';
+    var cheap = starPool().filter(function (x) { return x.v < 35; });
+    st = pick(cheap.length ? cheap : STARS);
+    to = pick(LEAGUES.filter(function (L) { return L.k !== leagueByClub(st.c); }).flatMap(function (L) { return L.clubes; }).filter(function (c) { return canMove(st, c, 'prestamo') && c !== st.c; }) || ['Benfica']);
+    if (!to) to = 'Benfica';
+  }
   var truth = Math.random() < 0.62;
-  var sobreMiClub = (st.c === ctx.myClub) || (destino === ctx.myClub);
+  var sobreMiClub = (st.c === ctx.myClub) || (to === ctx.myClub);
   var tanto = sobreMiClub ? 'tuyo' : 'mundo';
-  var rum = { id: ++hub.idn, truth: truth, type: 'out', star: st.n, from: st.c, to: destino, fee: st.v, eaten: false };
-  var tit = ['🔥 BOMBAZO en cocción: ', '📡 EXCLUSIVA: ', '💣 Mercado caliente: ', '🗞️ Se dice en los pasillos: '][R(4)];
+  var fee = Math.max(5, Math.round(st.v * (85 + R(31)) / 100));
+  var rum = { id: ++hub.idn, truth: truth, type: 'out', star: st.n, from: st.c, to: to, fee: fee, eaten: false, tipo: tipo };
+  var T = TIPO_TXT[tipo] || TIPO_TXT.interes;
+  var tit = pick(T.tit);
+  var body = T.bd.replace(/%STAR%/g, st.n).replace(/%FROM%/g, st.c).replace(/%TO%/g, to).replace(/%FEE%/g, fee) +
+    '. Fuentes del vestuario ' + (truth ? 'lo dan por casi hecho.' : 'lo niegan con una sonrisa rara…');
   return {
-    tag: 'FICHAJE', cat: tanto, title: tit + st.n + ' → ' + destino,
-    body: st.n + ' (' + st.c + ') estaría a un FIRME de ' + destino + ' por unos ' + st.v + 'M€. Fuentes del vestuario ' + (truth ? 'confirman los contactos: el acuerdo avanza.' : 'piden calma: todavía no hay nada formal… o eso dicen.'),
+    tag: 'FICHAJE', cat: tanto, title: tit + st.n + ' → ' + to,
+    body: body,
     rum: rum, truth: null, real: truth
   };
 }
@@ -341,6 +405,11 @@ var API = {
   LEAGUES: LEAGUES,
   ensure: ensure,
   leagueByClub: leagueByClub,
+  clubTier: clubTier,
+  starTier: starTier,
+  canMove: canMove,
+  _MOVES: MOVES,
+  _STARS: STARS,
   afterJornada: function (s, opts) {
     var hub = ensure(s); if (!hub) return;
     opts = opts || {};

@@ -21486,6 +21486,39 @@ var Mobile = {
     this.save();
     this.apply();
   },
+  /* 🖥️ modo UI menú: auto / hub (estilo PC forzado) / classic (forzada) */
+  hubMode: function() { try { return localStorage.getItem('fc27_uimode_force') || 'auto'; } catch (e) { return 'auto'; } },
+  hubDesc: function() {
+    var m = this.hubMode();
+    if (m === 'hub') return 'Estilo PC / EA Hub (forzado 🖥️)';
+    if (m === 'classic') return 'Clásica (forzada)';
+    return 'Automático según dispositivo';
+  },
+  cycleHub: function() {
+    var m = this.hubMode();
+    m = m === 'auto' ? 'hub' : (m === 'hub' ? 'classic' : 'auto');
+    try {
+      if (m === 'auto') localStorage.removeItem('fc27_uimode_force');
+      else localStorage.setItem('fc27_uimode_force', m);
+      if (m !== 'auto') localStorage.setItem('fc27_uimode', m);
+    } catch (e) {}
+    try { if (window.MENUHUB && MENUHUB.apply) MENUHUB.apply(); } catch (e2) {}
+    if (m === 'hub') this.tryLandscape();
+    this.syncHub();
+    try { if (typeof showToast === 'function') showToast('🖥️ UI del menú: ' + (m === 'hub' ? 'EA HUB activado (forzado)' : m), m === 'hub' ? 'Si no gira solo, voltea el teléfono ↔️' : ''); } catch (e3) {}
+  },
+  tryLandscape: function() {
+    /* mejor esfuerzo: pantalla completa + bloqueo horizontal (Android); iOS → toast con pista */
+    try {
+      if (!((typeof matchMedia === 'function') && matchMedia('(pointer:coarse)').matches)) return;
+      var de = document.documentElement;
+      var p = (de.requestFullscreen ? de.requestFullscreen({ navigationUI: 'hide' }) : Promise.reject(new Error('sin fullscreen')));
+      p.then(function() { try { return screen.orientation.lock('landscape'); } catch (e) {} }).catch(function() {});
+    } catch (e) {}
+  },
+  syncHub: function() {
+    try { var el = document.getElementById('hubui-label'); if (el) el.textContent = this.hubDesc(); } catch (e) {}
+  },
   settingsCard: function() {
     try {
       var tab = document.getElementById('tab-system');
@@ -21499,6 +21532,18 @@ var Mobile = {
         '<button class="btn-secondary" onclick="Mobile.cycle()">Cambiar modo</button></div>';
       tab.appendChild(d);
       this.syncLabel();
+      /* 🖥️ tarjeta: gráficos de UI del menú (forzar modo PC/EA Hub desde el móvil) */
+      if (!document.getElementById('hubui-card')) {
+        var h = document.createElement('div');
+        h.id = 'hubui-card';
+        h.className = 'fc27-pad fc27-card';
+        h.innerHTML = '<h2 class="section-title">🖥️ Gráficos de UI del menú</h2>' +
+          '<p class="fc27-dim">El hub estilo EA (lista vertical, fondos vivos) se activa solo en PC. Aquí puedes forzarlo para probarlo en tu móvil — mejor en horizontal.</p>' +
+          '<div class="mobi-row"><span id="hubui-label"></span>' +
+          '<button class="btn-secondary" onclick="Mobile.cycleHub()">Cambiar modo</button></div>';
+        tab.appendChild(h);
+      }
+      this.syncHub();
     } catch (e) {}
   }
 };
@@ -25520,6 +25565,39 @@ var KMBoost = {
             if (cs) cs.appendChild(b);
           }
         } catch (e) {}
+        /* 🌍 renunciar a la SELECCIÓN cuando quieras (sin esperar al verano) */
+        try {
+          var nb = document.getElementById('nat-resign-btn');
+          if (!nb && document.getElementById('resign-btn')) {
+            nb = document.createElement('button');
+            nb.id = 'nat-resign-btn';
+            nb.className = 'btn-secondary';
+            nb.style.cssText = 'margin-top:6px;font-weight:800;color:#8ecbff;border-color:rgba(120,190,255,.4)';
+            nb.addEventListener('click', function() {
+              var s2 = S();
+              if (!s2 || !s2.nat) return;
+              var nName = (typeof NT_NAME !== 'undefined' && NT_NAME[s2.nat]) || s2.nat;
+              var btns2 = [{
+                label: '🌍 Sí, presentar renuncia', primary: false,
+                fn: function() {
+                  try { ManagerCareer.pushNews('🌍 Renuncia a la selección', 'Dejaste el banquillo de ' + nName + ' por decisión propia, sin esperar al final de la temporada. La federación ya busca sucesor.'); } catch (e1) {}
+                  try { s2.nat = null; s2.natOffer = null; } catch (e2) {}
+                  try { if (typeof Dashboard !== 'undefined' && Dashboard.renderCareerSummary) Dashboard.renderCareerSummary(); } catch (e3) {}
+                  try { if (typeof showToast === 'function') showToast('🌍 Has renunciado a ' + nName, 'Las federaciones volverán a fijarse en ti más adelante.'); } catch (e4) {}
+                }
+              }, { label: 'Cancelar', primary: true, fn: null }];
+              gdShow('🌍 ¿RENUNCIAR A ' + nName.toUpperCase() + '?\n\nLa federación aceptará tu dimisión de inmediato, a mitad de temporada si hace falta.\nPodrás volver a dirigir selecciones cuando lleguen nuevas ofertas.', btns2);
+            });
+            var rb = document.getElementById('resign-btn');
+            if (rb && rb.parentNode) rb.parentNode.insertBefore(nb, rb.nextSibling);
+          }
+          if (nb) {
+            var sN = S();
+            var hasNat = !!(sN && sN.nat);
+            nb.style.display = hasNat ? '' : 'none';
+            if (hasNat) nb.textContent = '🌍 Renunciar a la selección ' + ((typeof NT_NAME !== 'undefined' && NT_NAME[sN.nat]) || '');
+          }
+        } catch (eN) {}
         return r;
       };
       nrcs3._cj76 = true;
@@ -40187,9 +40265,12 @@ else brand();
 
 /* ── popup de novedades: aparece una vez por versión desplegada ─────────────
    Mantener: al soltar un deploy toca subir BUILD para que reaparezca. */
-var BUILD = 'v6.6';
+var BUILD = 'v6.8';
 var NEWS = [
   '🛠️ <strong>JUGADORES REALES DONDE TOCABA</strong>: en Torneos (¡Champions incluida!) los clubes reales salen con su plantilla auténtica — el Barça con Lamine y Pedri, el Madrid con Mbappé… — y las selecciones con nombres reales completos. Y al <b>CREAR TU CLUB</b> en Carrera Manager heredas la plantilla REAL del equipo sustituido (la vista previa del asistente también).',
+  '🎙️ <strong>RUEDAS DE PRENSA RENOVADAS</strong> (Manager y Jugador): miles de preguntas distintas, siempre sobre <b>TU club</b> — tu próximo rival, tu estrella, tu cantera, tu racha… Se acabó eso de que te pregunten por fichajes de equipos que no son los tuyos. Y con respuestas que mueven moral y confianza.',
+  '🧭 <strong>MERCADO COHERENTE</strong>: 106 nubes de traspaso nuevas y realistas — los cracks mundiales solo suenan para clubes a su altura (nada de Musiala al Motagua 😅), la MLS/MX mueve el maletín por veteranos y tu Liga Nacional recibe préstamos de promesas. Además: <b>RENUNCIA</b> a tu club o a tu selección cuando quieras, sin esperar al verano.',
+  '🖥️ <strong>MODO PC EN TU CELULAR</strong>: ¿querías probar el hub estilo EA del menú? Ahora puedes forzarlo tú mismo: entra a <b>Ajustes → 🖥️ Gráficos de UI del menú → Estilo PC / EA Hub</b>. Pon el teléfono en horizontal para la experiencia completa.',
   '⭐ <strong>EVENTO CHAMPIONS en Ultimate Team</strong>: 16 cartas con arte propio UCL 25/26 (99-108) y sobre propio en la tienda (12.000 💰).',
   '⛓️ <strong>EVENTO BLUE LOCK</strong>: Rin, Kaiser, Sae, Nagi, Bachira, Barou, Chigiri, Loki, Bunny y Gagamaru — 10 cartas prismáticas del anime (101-108).',
   '🌈 <strong>EMMANUEL 119</strong>: la carta del barrio — chase card arcoíris oculta en ambos sobres nuevos (1% por carta) y canjeable directa con el código <b>EMMANUEL119</b>. #22 Honduras 🇭🇳',
@@ -40223,7 +40304,7 @@ function newsPopup(){
 newsPopup();
 
 window.FC27SKIN = {
-  version: '1.4', build: BUILD,
+  version: '1.6', build: BUILD,
   /* pruebas/harness: forzar la tarjeta de novedades (showNews) */
   showNews: function () { try { if (Sfn) Sfn(); } catch (e) {} }
 };
@@ -40341,6 +40422,7 @@ return { open: open, close: close, home: renderHome, pick: pick, detail: functio
 })();
 </script>
 <script id="menu-hub-inline">
+/* · sincronizado con menu-hub.js (v670: forzado desde Ajustes + .mh-force) · */
 /* ═══════════════════════════════════════════════════════════════════════════
    MENU HUB v1.0 · gráficos MEDIO (solo PC) — hub vertical estilo "The World's Game"
    ─────────────────────────────────────────────────────────────────────────
@@ -40435,14 +40517,17 @@ var CSS = [
 '.mh-toggle{position:absolute;top:12px;right:14px;z-index:5;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);',
 '  border-radius:999px;color:rgba(233,240,255,.8);font:700 11px system-ui;padding:6px 12px;cursor:pointer;backdrop-filter:blur(4px)}',
 '.mh-toggle:hover{border-color:#25f6c9;color:#fff}',
-'@media (pointer:coarse),(max-width:899px){.mh-toggle{display:none !important}body.hub-on #menu-hub{',
+'@media (pointer:coarse),(max-width:899px){.mh-toggle{display:none !important}body.hub-on:not(.mh-force) #menu-hub{',
 '  display:none !important}body.hub-on #screen-main-menu{display:flex !important;display:-webkit-flex !important}}'
 ].join('');
 
 var hub = null, lastOn = null;
 
+function forced() { try { return localStorage.getItem('fc27_uimode_force'); } catch (e) { return null; } }
 function okPC() {
   if (root.__MH_PC__ === true) return true; /* bandera de pruebas/headless */
+  if (forced() === 'hub') return true;      /* 📱 forzar desde Ajustes: "quiero probar el modo PC en mi cel" */
+  if (forced() === 'classic') return false;
   try { return (typeof matchMedia === 'function') && matchMedia('(min-width:900px) and (pointer:fine)').matches; }
   catch (e) { return (typeof innerWidth === 'number') && innerWidth >= 900; }
 }
@@ -40535,6 +40620,8 @@ function apply(force) {
   ensureToggle();
   var want = (force === 'classic' || force === 'hub') ? force : mode();
   try { localStorage.setItem(LS, want); } catch (e) {}
+  if (force === 'classic') { try { localStorage.removeItem('fc27_uimode_force'); } catch (e2) {} }
+  try { document.body.classList.toggle('mh-force', forced() === 'hub'); } catch (e3) {}
   if (okPC() && want === 'hub') document.body.classList.add('hub-on');
   else document.body.classList.remove('hub-on');
 }

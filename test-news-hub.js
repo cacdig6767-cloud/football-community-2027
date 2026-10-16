@@ -186,6 +186,35 @@ const crypto = require('crypto');
 function hash(p) { return crypto.createHash('md5').update(fs.readFileSync(p)).digest('hex'); }
 t(hash(__dirname + '/news-hub.js') === hash(__dirname + '/football-community-2027/news-hub.js'), 'news-hub.js raíz ↔ espejo idénticos');
 t(fs.existsSync(__dirname + '/football-community-2027/press-bank.js') && hash(__dirname + '/press-bank.js') === hash(__dirname + '/football-community-2027/press-bank.js'), 'press-bank.js existe en espejo e idéntico');
+/* 17· 🧭 coherencia de mercado: catálogo ≥100 nubes y TODAS coherentes */
+const movs = NH._MOVES.map(x => x.split('|'));
+t(movs.length >= 100, 'catálogo de nubes: ' + movs.length + ' traspasos curados (pedido ~100)');
+const cohBad = movs.filter(mv => { const stM = NH._STARS.find(o => o.n === mv[0]); return !stM || mv[1] === stM.c || !NH.canMove(stM, mv[1], mv[2]); });
+t(cohBad.length === 0, 'las ' + movs.length + ' nubes pasan el filtro de coherencia (' + (cohBad[0] ? 'incoherente: ' + cohBad[0] : 'ninguna incoherente') + ')');
+const musialaHon = movs.filter(mv => /Musiala|Haaland|Vinícius|Bellingham|Lamine/.test(mv[0]) && /Olimpia|Motagua|Marathón/.test(mv[1]));
+t(musialaHon.length === 0, 'cero absurdos: ningún crack mundial rumbo a Liga Nacional');
+const aOliMot = movs.filter(mv => /Olimpia|Motagua|Marathón/.test(mv[1]));
+t(aOliMot.length >= 2 && aOliMot.every(mv => mv[2] === 'prestamo'), 'Liga Nacional solo recibe PRÉSTAMOS de jóvenes (' + aOliMot.length + ' nubes con sabor 🇭🇳)');
+t(NH.leagueByClub('Olimpia') === 'hon' && movs.every(mv => NH.leagueByClub(mv[1]) !== null || /desconocido/.test('x')), 'todos los destinos del catálogo son clubes reales del juego');
+
+/* 18· el generador nunca produce incoherencias en 400 disparos */
+const s18 = mgrState(); NH.ensure(s18); s18.popups = false;
+for (let j = 0; j < 400; j++) NH.afterJornada(s18, { mode: 'mgr' });
+const rums18 = s18.newsHub.feed.filter(x => x.rum);
+const incoh = rums18.filter(x => { const stX = NH._STARS.find(o => o.n === x.rum.star); return stX && !NH.canMove(stX, x.rum.to, x.rum.tipo || 'interes'); });
+t(rums18.length >= 5 && incoh.length === 0, '400 jornadas generadas: ' + rums18.length + ' rumores, ' + incoh.length + ' incoherentes');
+
+/* 19· forzado modo PC y renuncia selección: enlaces estáticos */
+const mhSrc = fs.readFileSync(__dirname + '/menu-hub.js', 'utf8');
+t(/fc27_uimode_force/.test(mhSrc) && /mh-force/.test(mhSrc), 'menu-hub.js entiende el modo forzado (fc27_uimode_force + .mh-force)');
+const idxSrc2 = fs.readFileSync(__dirname + '/index.html', 'utf8');
+t(/hubui-card/.test(idxSrc2) && /cycleHub/.test(idxSrc2) && /tryLandscape/.test(idxSrc2), 'Ajustes: tarjeta "🖥️ Gráficos de UI del menú" con forzado + horizontal');
+t(/nat-resign-btn/.test(idxSrc2), 'botón "🌍 Renunciar a la selección" presente en el panel del míster');
+t(/resign-btn/.test(idxSrc2), 'botón "🚪 Abandonar el club" (dimisión mitad de temporada) sigue presente');
+const crypto2 = require('crypto');
+function hash2(p) { return crypto2.createHash('md5').update(fs.readFileSync(p)).digest('hex'); }
+t(hash2(__dirname + '/menu-hub.js') === hash2(__dirname + '/football-community-2027/menu-hub.js'), 'menu-hub.js raíz ↔ espejo idénticos');
+
 
 
 console.log('');

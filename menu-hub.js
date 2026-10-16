@@ -92,14 +92,17 @@ var CSS = [
 '.mh-toggle{position:absolute;top:12px;right:14px;z-index:5;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);',
 '  border-radius:999px;color:rgba(233,240,255,.8);font:700 11px system-ui;padding:6px 12px;cursor:pointer;backdrop-filter:blur(4px)}',
 '.mh-toggle:hover{border-color:#25f6c9;color:#fff}',
-'@media (pointer:coarse),(max-width:899px){.mh-toggle{display:none !important}body.hub-on #menu-hub{',
+'@media (pointer:coarse),(max-width:899px){.mh-toggle{display:none !important}body.hub-on:not(.mh-force) #menu-hub{',
 '  display:none !important}body.hub-on #screen-main-menu{display:flex !important;display:-webkit-flex !important}}'
 ].join('');
 
 var hub = null, lastOn = null;
 
+function forced() { try { return localStorage.getItem('fc27_uimode_force'); } catch (e) { return null; } }
 function okPC() {
   if (root.__MH_PC__ === true) return true; /* bandera de pruebas/headless */
+  if (forced() === 'hub') return true;      /* 📱 forzar desde Ajustes: "quiero probar el modo PC en mi cel" */
+  if (forced() === 'classic') return false;
   try { return (typeof matchMedia === 'function') && matchMedia('(min-width:900px) and (pointer:fine)').matches; }
   catch (e) { return (typeof innerWidth === 'number') && innerWidth >= 900; }
 }
@@ -192,6 +195,8 @@ function apply(force) {
   ensureToggle();
   var want = (force === 'classic' || force === 'hub') ? force : mode();
   try { localStorage.setItem(LS, want); } catch (e) {}
+  if (force === 'classic') { try { localStorage.removeItem('fc27_uimode_force'); } catch (e2) {} }
+  try { document.body.classList.toggle('mh-force', forced() === 'hub'); } catch (e3) {}
   if (okPC() && want === 'hub') document.body.classList.add('hub-on');
   else document.body.classList.remove('hub-on');
 }
