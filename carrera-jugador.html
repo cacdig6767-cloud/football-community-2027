@@ -3294,12 +3294,13 @@ else brand();
 
 /* ── popup de novedades: aparece una vez por versión desplegada ─────────────
    Mantener: al soltar un deploy toca subir BUILD para que reaparezca. */
-var BUILD = 'v6.8';
+var BUILD = 'v6.9';
 var NEWS = [
   '🛠️ <strong>JUGADORES REALES DONDE TOCABA</strong>: en Torneos (¡Champions incluida!) los clubes reales salen con su plantilla auténtica — el Barça con Lamine y Pedri, el Madrid con Mbappé… — y las selecciones con nombres reales completos. Y al <b>CREAR TU CLUB</b> en Carrera Manager heredas la plantilla REAL del equipo sustituido (la vista previa del asistente también).',
   '🎙️ <strong>RUEDAS DE PRENSA RENOVADAS</strong> (Manager y Jugador): miles de preguntas distintas, siempre sobre <b>TU club</b> — tu próximo rival, tu estrella, tu cantera, tu racha… Se acabó eso de que te pregunten por fichajes de equipos que no son los tuyos. Y con respuestas que mueven moral y confianza.',
   '🧭 <strong>MERCADO COHERENTE</strong>: 106 nubes de traspaso nuevas y realistas — los cracks mundiales solo suenan para clubes a su altura (nada de Musiala al Motagua 😅), la MLS/MX mueve el maletín por veteranos y tu Liga Nacional recibe préstamos de promesas. Además: <b>RENUNCIA</b> a tu club o a tu selección cuando quieras, sin esperar al verano.',
   '🖥️ <strong>MODO PC EN TU CELULAR</strong>: ¿querías probar el hub estilo EA del menú? Ahora puedes forzarlo tú mismo: entra a <b>Ajustes → 🖥️ Gráficos de UI del menú → Estilo PC / EA Hub</b>. Pon el teléfono en horizontal para la experiencia completa.',
+  '⚡ <strong>MODO GRÁFICOS ALTO</strong> (nuevo, en la misma tarjeta de Ajustes): el menú hub ahora tiene fondos <b>animados</b> por modo — CR7 en Carrera Jugador, Mourinho celebrando en Manager (¡sin marca de agua!, está en movimiento real), El Clásico en Partido Rápido y el estadio digital en Torneos. Con Ken Burns cinematográfico en el resto.',
   '⭐ <strong>EVENTO CHAMPIONS en Ultimate Team</strong>: 16 cartas con arte propio UCL 25/26 (99-108) y sobre propio en la tienda (12.000 💰).',
   '⛓️ <strong>EVENTO BLUE LOCK</strong>: Rin, Kaiser, Sae, Nagi, Bachira, Barou, Chigiri, Loki, Bunny y Gagamaru — 10 cartas prismáticas del anime (101-108).',
   '🌈 <strong>EMMANUEL 119</strong>: la carta del barrio — chase card arcoíris oculta en ambos sobres nuevos (1% por carta) y canjeable directa con el código <b>EMMANUEL119</b>. #22 Honduras 🇭🇳',
@@ -3333,7 +3334,7 @@ function newsPopup(){
 newsPopup();
 
 window.FC27SKIN = {
-  version: '1.6', build: BUILD,
+  version: '1.7', build: BUILD,
   /* pruebas/harness: forzar la tarjeta de novedades (showNews) */
   showNews: function () { try { if (Sfn) Sfn(); } catch (e) {} }
 };

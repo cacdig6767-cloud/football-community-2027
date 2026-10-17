@@ -227,6 +227,21 @@ const ut3 = fs.readFileSync(__dirname + '/ultimate-team.html', 'utf8');
 t(carr3.includes('assets/favicon.png?v=3') && ut3.includes('assets/favicon.png?v=3'), 'Carrera y UT por fin tienen favicon (antes ninguno)');
 t(mhSrc.includes('fc27-logo.png?v=3'), 'menu-hub.js usa la imagen del logo en vez de texto');
 
+/* 21· ⚡ MODO GRÁFICOS ALTO: assets animados + mapeo por modo + ciclo de Ajustes */
+const MENU_AL = __dirname + '/assets/menu/';
+t(['alto-default.jpg','alto-torneos.jpg','alto-jugador.jpg','alto-rapido.jpg','alto-manager.gif'].every(f => fs.existsSync(MENU_AL + f) && fs.existsSync(MIR_AL(f)) && fs.statSync(MENU_AL + f).size > 4000), '5 fondos ALTO procesados en assets/menu (raíz y espejo)');
+function MIR_AL(f) { return __dirname + '/football-community-2027/assets/menu/' + f; }
+const gifB = fs.readFileSync(MENU_AL + 'alto-manager.gif');
+t(gifB[0] === 0x47 && gifB[1] === 0x49 && gifB[2] === 0x46, 'alto-manager.gif es un GIF animado real (cabecera GIF)');
+t(!/makeagif/i.test(gifB.toString('latin1')), 'GIF de Mourinho sin marca de agua makeagif');
+const mhAl = fs.readFileSync(__dirname + '/menu-hub.js', 'utf8');
+t(/bga: DIR \+ 'alto-torneos.jpg'/.test(mhAl) && /bga: DIR \+ 'alto-jugador.jpg'/.test(mhAl) && /bga: DIR \+ 'alto-rapido.jpg'/.test(mhAl) && /bga: DIR \+ 'alto-manager.gif'/.test(mhAl) && /DEFAULT_BGA/.test(mhAl), 'mapeo pedido: torneos⭐ · jugador CR7 · rápido Clásico · manager Mourinho GIF · portada promo');
+t(/hubhi/.test(mhAl) && /mh-hi/.test(mhAl) && /mhKB/.test(mhAl), 'modo "hubhi" con clase mh-hi + Ken Burns (transform GPU)');
+t(fs.readFileSync(__dirname + '/index.html', 'utf8').includes('hubhi'), 'Ajustes cicla hasta PC ALTO (hubhi) en index');
+const idxAl = fs.readFileSync(__dirname + '/index.html', 'utf8');
+t((idxAl.match(/alto-/g) || []).length >= 5, 'fondos ALTO también dentro del menu-hub inline de index (' + (idxAl.match(/alto-/g) || []).length + ' refs)');
+
+
 
 
 

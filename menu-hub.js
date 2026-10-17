@@ -14,14 +14,18 @@ var LS = 'fc27_uimode';
 if (typeof document === 'undefined') return;
 
 var DIR = 'assets/menu/';
+var DEFAULT_BGA = DIR + 'alto-default.jpg';
+function hiQ() { /* modo ALTO ⚡ (fondos animados) se pide desde Ajustes (fc27_uimode='hubhi') */
+  try { return localStorage.getItem(LS) === 'hubhi'; } catch (e) { return false; }
+}
 var DEFAULT_BG = DIR + 'menu-default.jpg';
 
 var ITEMS = [
-  { k: 'pj',  t: 'CARRERA JUGADOR', d: 'Vive los momentos como futbolista — al retirarte pasas al banquillo', bg: DIR + 'menu-jugador.jpg' },
-  { k: 'mgr', t: 'CARRERA MANAGER', d: 'Continúa tu partida, crea una nueva o importa un archivo', bg: DIR + 'menu-manager.jpg' },
+  { k: 'pj',  t: 'CARRERA JUGADOR', d: 'Vive los momentos como futbolista — al retirarte pasas al banquillo', bg: DIR + 'menu-jugador.jpg', bga: DIR + 'alto-jugador.jpg' },
+  { k: 'mgr', t: 'CARRERA MANAGER', d: 'Continúa tu partida, crea una nueva o importa un archivo', bg: DIR + 'menu-manager.jpg', bga: DIR + 'alto-manager.gif' },
   { k: 'ut',  t: 'ULTIMATE TEAM', d: 'Sobres, colección, gym sin techo y partidos vivos — hasta 🛸 Galáctica', bg: DIR + 'menu-ut.jpg' },
-  { k: 'trn', t: 'TORNEOS', d: 'Champions, Libertadores, Copa Global, Centroamérica… y sandbox total', bg: DIR + 'menu-torneos.jpg' },
-  { k: 'qr',  t: 'PARTIDO RÁPIDO', d: 'Amistosos, finales oficiales y FutSal con arenas y paredes', bg: DIR + 'menu-partido.jpg' },
+  { k: 'trn', t: 'TORNEOS', d: 'Champions, Libertadores, Copa Global, Centroamérica… y sandbox total', bg: DIR + 'menu-torneos.jpg', bga: DIR + 'alto-torneos.jpg' },
+  { k: 'qr',  t: 'PARTIDO RÁPIDO', d: 'Amistosos, finales oficiales y FutSal con arenas y paredes', bg: DIR + 'menu-partido.jpg', bga: DIR + 'alto-rapido.jpg' },
   { k: 'imp', t: 'MODO IMPOSTOR', d: 'Juego de mesa local: una palabra para todos menos para el impostor', bg: DIR + 'menu-impostor.jpg' },
   { k: 'ed',  t: 'EDITOR', d: 'Plantillas · crea cracks · exporta / importa', bg: DIR + 'menu-editor.jpg' },
   { k: 'cfg', t: 'AJUSTES', d: 'Música, IA, cancha y opciones del juego', bg: DIR + 'menu-ajustes.jpg' }
@@ -92,6 +96,8 @@ var CSS = [
 '.mh-toggle{position:absolute;top:12px;right:14px;z-index:5;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);',
 '  border-radius:999px;color:rgba(233,240,255,.8);font:700 11px system-ui;padding:6px 12px;cursor:pointer;backdrop-filter:blur(4px)}',
 '.mh-toggle:hover{border-color:#25f6c9;color:#fff}',
+'@keyframes mhKB{0%{transform:scale(1.03) translate(0,0)}100%{transform:scale(1.13) translate(-1.5%,-1%)}}',
+'body.mh-hi #menu-hub .mh-bg{animation:mhKB 24s ease-in-out infinite alternate;will-change:transform}',
 '@media (pointer:coarse),(max-width:899px){.mh-toggle{display:none !important}body.hub-on:not(.mh-force) #menu-hub{',
 '  display:none !important}body.hub-on #screen-main-menu{display:flex !important;display:-webkit-flex !important}}'
 ].join('');
@@ -101,7 +107,7 @@ var hub = null, lastOn = null;
 function forced() { try { return localStorage.getItem('fc27_uimode_force'); } catch (e) { return null; } }
 function okPC() {
   if (root.__MH_PC__ === true) return true; /* bandera de pruebas/headless */
-  if (forced() === 'hub') return true;      /* 📱 forzar desde Ajustes: "quiero probar el modo PC en mi cel" */
+  if (forced() === 'hub' || forced() === 'hubhi') return true; /* 📱 forzar desde Ajustes: modo PC en el cel */
   if (forced() === 'classic') return false;
   try { return (typeof matchMedia === 'function') && matchMedia('(min-width:900px) and (pointer:fine)').matches; }
   catch (e) { return (typeof innerWidth === 'number') && innerWidth >= 900; }
@@ -112,9 +118,9 @@ function build() {
   if (hub || typeof document.body === 'undefined' || !document.body) return;
   hub = document.createElement('div');
   hub.id = 'menu-hub';
-  var bgs = '<img class="mh-bg on" data-k="default" src="' + DEFAULT_BG + '" alt="" loading="eager" fetchpriority="high" decoding="async">';
+  var bgs = '<img class="mh-bg on" data-k="default" src="' + (hiQ() ? DEFAULT_BGA : DEFAULT_BG) + '" alt="" loading="eager" fetchpriority="high" decoding="async">';
   ITEMS.forEach(function (it) {
-    bgs += '<img class="mh-bg" data-k="' + it.k + '" src="' + it.bg + '" alt="" loading="lazy" decoding="async">';
+    bgs += '<img class="mh-bg" data-k="' + it.k + '" src="' + (hiQ() && it.bga ? it.bga : it.bg) + '" alt="" loading="lazy" decoding="async">';
   });
   hub.innerHTML = bgs +
     '<div class="mh-scrim"></div>' +
@@ -190,15 +196,32 @@ function ensureToggle() {
   scr.appendChild(b);
 }
 
+function refreshBgs() {
+  /* actualiza los fondos cuando se cambia MEDIO ↔ ALTO sin reconstruir el hub */
+  if (!hub) return;
+  try {
+    var imgs = hub.querySelectorAll('.mh-bg');
+    for (var i = 0; i < imgs.length; i++) {
+      var k = imgs[i].getAttribute('data-k');
+      if (k === 'default') { imgs[i].src = hiQ() ? DEFAULT_BGA : DEFAULT_BG; continue; }
+      var it = ITEMS.filter(function (x) { return x.k === k; })[0];
+      if (it) imgs[i].src = (hiQ() && it.bga) ? it.bga : it.bg;
+    }
+  } catch (e) {}
+}
+
 function apply(force) {
   build();
   ensureToggle();
   var want = (force === 'classic' || force === 'hub') ? force : mode();
   try { localStorage.setItem(LS, want); } catch (e) {}
   if (force === 'classic') { try { localStorage.removeItem('fc27_uimode_force'); } catch (e2) {} }
-  try { document.body.classList.toggle('mh-force', forced() === 'hub'); } catch (e3) {}
-  if (okPC() && want === 'hub') document.body.classList.add('hub-on');
+  try { document.body.classList.toggle('mh-force', forced() === 'hub' || forced() === 'hubhi'); } catch (e3) {}
+  if (okPC() && (want === 'hub' || want === 'hubhi')) document.body.classList.add('hub-on');
   else document.body.classList.remove('hub-on');
+  try { document.body.classList.toggle('mh-hi', okPC() && want === 'hubhi'); } catch (e4) {}
+  refreshBgs();
+  try { var f = document.querySelector('#menu-hub .mh-foot'); if (f) f.textContent = '⬆⬇ Selecciona · 🖱️ pasa el cursor · MODO GRÁFICOS: ' + (want === 'hubhi' ? 'ALTO ⚡ (fondos animados)' : 'MEDIO'); } catch (e5) {}
 }
 
 var MH = { apply: apply, go: go, hoverKey: function (k) { var it = ITEMS.filter(function (x) { return x.k === k; })[0]; hover(it || null); }, isPC: okPC, mode: mode, ITEMS: ITEMS, DIR: DIR };
