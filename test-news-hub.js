@@ -243,6 +243,19 @@ t((idxAl.match(/alto-/g) || []).length >= 5, 'fondos ALTO también dentro del me
 
 
 
+/* 22· 🩹 BUG ajustes/volver (MEDIO/ALTO) arreglado + 🖼️ splash promo Lamine */
+t(/body\.mh-away #menu-hub\{display:none !important\}/.test(mhSrc), 'menu-hub CSS: body.mh-away oculta el hub fuera del menú principal');
+t(/hookScreens/.test(mhSrc) && /wrapped\._mh = true/.test(mhSrc), 'menu-hub: hookScreens encadena Game.showScreen (_mh) para retirar/traer el hub');
+t(/function G\(\)/.test(mhSrc) && /GG\.showScreen = wrapped/.test(mhSrc) && /var g = G\(\); if \(g\) g\.showScreen/.test(mhSrc), 'menu-hub: GO funciona aunque const Game no cuelgue de window (atajo G())');
+t(idxSrc2.includes('hookScreens') && idxSrc2.includes('body.mh-away #menu-hub{display:none !important}'), 'menu-hub INLINE de index lleva el arreglo (sin clics tragados)');
+t(/st\.id = 'load-promo-css'/.test(idxSrc2) && /classList\.add\('load-promo'\)/.test(idxSrc2), 'pantalla de carga: promo FC27 (load-promo + css inyectado)');
+t(/alto-default\.jpg\\'\) center 20%/.test(idxSrc2), 'la promo de carga usa assets/menu/alto-default.jpg (Lamine)');
+t(/f === 'classic' \|\| \(!f && u === 'classic'\)/.test(idxSrc2), 'la promo se salta en interfaz Clásica (carga oscura intacta)');
+const skFx = fs.readFileSync(__dirname + '/fc27-skin.js', 'utf8');
+t(/var BUILD = 'v6\.10';/.test(skFx) && /ARREGLADOS los botones/.test(skFx) && /NUEVA PANTALLA DE CARGA/.test(skFx), 'skin v6.10 con la novedad del arreglo y la carga nueva');
+t(hash2(__dirname + '/carrera-jugador.html') === hash2(__dirname + '/football-community-2027/carrera-jugador.html') && hash2(__dirname + '/ultimate-team.html') === hash2(__dirname + '/football-community-2027/ultimate-team.html') && hash2(__dirname + '/fc27-skin.js') === hash2(__dirname + '/football-community-2027/fc27-skin.js'), 'skinline: carrera + UT + skin raíz ↔ espejo idénticos');
+
+
 
 
 console.log('');

@@ -137,8 +137,10 @@ else brand();
 
 /* ── popup de novedades: aparece una vez por versión desplegada ─────────────
    Mantener: al soltar un deploy toca subir BUILD para que reaparezca. */
-var BUILD = 'v6.9';
+var BUILD = 'v6.10';
 var NEWS = [
+  '🩹 <strong>ARREGLADOS los botones de ⚙️ Ajustes y «← Volver al menú»</strong> con los gráficos de menú estilo EA (MEDIO/ALTO ⚡): la capa del hub se estaba tragando los clics — ahora se aparta solo cuando entras a una pantalla y regresa al salir.',
+  '🖼️ <strong>NUEVA PANTALLA DE CARGA</strong>: la promo oficial de FC27 con Lamine Yamal de fondo tras el «▶ ENTRAR AL JUEGO» en gráficos MEDIO y ALTO (la interfaz Clásica conserva la carga oscura de siempre).',
   '🛠️ <strong>JUGADORES REALES DONDE TOCABA</strong>: en Torneos (¡Champions incluida!) los clubes reales salen con su plantilla auténtica — el Barça con Lamine y Pedri, el Madrid con Mbappé… — y las selecciones con nombres reales completos. Y al <b>CREAR TU CLUB</b> en Carrera Manager heredas la plantilla REAL del equipo sustituido (la vista previa del asistente también).',
   '🎙️ <strong>RUEDAS DE PRENSA RENOVADAS</strong> (Manager y Jugador): miles de preguntas distintas, siempre sobre <b>TU club</b> — tu próximo rival, tu estrella, tu cantera, tu racha… Se acabó eso de que te pregunten por fichajes de equipos que no son los tuyos. Y con respuestas que mueven moral y confianza.',
   '🧭 <strong>MERCADO COHERENTE</strong>: 106 nubes de traspaso nuevas y realistas — los cracks mundiales solo suenan para clubes a su altura (nada de Musiala al Motagua 😅), la MLS/MX mueve el maletín por veteranos y tu Liga Nacional recibe préstamos de promesas. Además: <b>RENUNCIA</b> a tu club o a tu selección cuando quieras, sin esperar al verano.',

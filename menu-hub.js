@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   MENU HUB v1.0 · gráficos MEDIO (solo PC) — hub vertical estilo "The World's Game"
+   MENU HUB v1.1 · gráficos MEDIO (solo PC) — hub vertical estilo "The World's Game"
    ─────────────────────────────────────────────────────────────────────────
    · Fondo por defecto: estadio nocturno. Al pasar el cursor por un modo, el
      fondo cambia con cross-fade suave a la foto de ese modo.
@@ -32,14 +32,14 @@ var ITEMS = [
 ];
 
 var GO = {
-  pj:  function () { root.Game.showScreen('screen-player-career'); },
+  pj:  function () { var g = G(); if (g) g.showScreen('screen-player-career'); },
   mgr: function () { root.SaveUI.openLoad(); },
   ut:  function () { root.open('ultimate-team.html', '_blank'); },
   trn: function () { root.TorneosUI.open(); },
   qr:  function () { root.QUICKMATCH.open(); },
   imp: function () { root.IMPOSTOR.open(); },
   ed:  function () { root.RosterEditor.open(); },
-  cfg: function () { root.Game.showScreen('screen-settings'); }
+  cfg: function () { var g = G(); if (g) g.showScreen('screen-settings'); }
 };
 
 var PANEL_BYKEY = {
@@ -58,6 +58,7 @@ var CSS = [
 '#menu-hub{position:fixed;inset:0;z-index:900;background:#060a12;overflow:hidden;display:none',
 ';font-family:\'Barlow Condensed\',sans-serif}',
 'body.hub-on #menu-hub{display:block}',
+'body.mh-away #menu-hub{display:none !important}',
 '#menu-hub .mh-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;',
 '  transition:opacity .8s ease;pointer-events:none}',
 '#menu-hub .mh-bg.on{opacity:1}',
@@ -210,7 +211,35 @@ function refreshBgs() {
   } catch (e) {}
 }
 
+/* 🩹 «Game» se declaró con const: NO cuelga de window y root.Game era undefined —
+   el identificador global lo resuelve cualquier script; ese es el atajo seguro */
+function G() {
+  try { if (typeof Game !== 'undefined') return Game; } catch (e) {}
+  try { if (typeof root.Game !== 'undefined') return root.Game; } catch (e2) {}
+  return null;
+}
+var screensHooked = false;
+function hookScreens() {
+  /* 🩹 el hub (z-900 fijo) se tragaba los clics de ⚙️ Ajustes y «← Volver»: se retira
+     cuando la pantalla activa no es el menú principal y vuelve al regresar */
+  if (screensHooked) return;
+  var GG = G();
+  if (!GG || typeof GG.showScreen !== 'function') return;
+  screensHooked = true;
+  try {
+    var prevShow = GG.showScreen;
+    var wrapped = function (id) {
+      var r = prevShow.apply(this, arguments);
+      try { if (document.body) document.body.classList.toggle('mh-away', id !== 'screen-main-menu'); } catch (e) {}
+      return r;
+    };
+    wrapped._mh = true;
+    GG.showScreen = wrapped;
+  } catch (e) {}
+}
+
 function apply(force) {
+  hookScreens();
   build();
   ensureToggle();
   var want = (force === 'classic' || force === 'hub') ? force : mode();
