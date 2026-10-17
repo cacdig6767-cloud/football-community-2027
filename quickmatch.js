@@ -333,7 +333,7 @@ function open() {
       '<div id="qm-body" style="max-width:860px;margin:0 auto;padding:12px 10px 60px"></div>';
     document.body.appendChild(sc);
     var bk = document.getElementById('qm-back');
-    if (bk) bk.onclick = function () { close(); };
+    if (bk) bk.onclick = function () { sc.style.display = 'none'; close(); }; /* 🩹 ← Menú también cierra el hub de Partido Rápido (antes close() solo quitaba el partido) */
   }
   sc.style.display = '';
   render();

@@ -14,18 +14,19 @@ var LS = 'fc27_uimode';
 if (typeof document === 'undefined') return;
 
 var DIR = 'assets/menu/';
-var DEFAULT_BGA = DIR + 'alto-default.jpg';
+var DEFAULT_BGA = DIR + 'alto-estadio.mp4';
+var BGA_POSTER = DIR + 'alto-estadio.jpg';
 function hiQ() { /* modo ALTO ⚡ (fondos animados) se pide desde Ajustes (fc27_uimode='hubhi') */
   try { return localStorage.getItem(LS) === 'hubhi'; } catch (e) { return false; }
 }
 var DEFAULT_BG = DIR + 'menu-default.jpg';
 
 var ITEMS = [
-  { k: 'pj',  t: 'CARRERA JUGADOR', d: 'Vive los momentos como futbolista — al retirarte pasas al banquillo', bg: DIR + 'menu-jugador.jpg', bga: DIR + 'alto-jugador.jpg' },
+  { k: 'pj',  t: 'CARRERA JUGADOR', d: 'Vive los momentos como futbolista — al retirarte pasas al banquillo', bg: DIR + 'menu-jugador.jpg', bga: DIR + 'alto-jugador.mp4', bgp: DIR + 'alto-jugador.jpg' },
   { k: 'mgr', t: 'CARRERA MANAGER', d: 'Continúa tu partida, crea una nueva o importa un archivo', bg: DIR + 'menu-manager.jpg', bga: DIR + 'alto-manager.gif' },
   { k: 'ut',  t: 'ULTIMATE TEAM', d: 'Sobres, colección, gym sin techo y partidos vivos — hasta 🛸 Galáctica', bg: DIR + 'menu-ut.jpg' },
-  { k: 'trn', t: 'TORNEOS', d: 'Champions, Libertadores, Copa Global, Centroamérica… y sandbox total', bg: DIR + 'menu-torneos.jpg', bga: DIR + 'alto-torneos.jpg' },
-  { k: 'qr',  t: 'PARTIDO RÁPIDO', d: 'Amistosos, finales oficiales y FutSal con arenas y paredes', bg: DIR + 'menu-partido.jpg', bga: DIR + 'alto-rapido.jpg' },
+  { k: 'trn', t: 'TORNEOS', d: 'Champions, Libertadores, Copa Global, Centroamérica… y sandbox total', bg: DIR + 'menu-torneos.jpg', bga: DIR + 'alto-torneos.mp4', bgp: DIR + 'alto-torneos.jpg' },
+  { k: 'qr',  t: 'PARTIDO RÁPIDO', d: 'Amistosos, finales oficiales y FutSal con arenas y paredes', bg: DIR + 'menu-partido.jpg', bga: DIR + 'alto-rapido.mp4', bgp: DIR + 'alto-rapido.jpg' },
   { k: 'imp', t: 'MODO IMPOSTOR', d: 'Juego de mesa local: una palabra para todos menos para el impostor', bg: DIR + 'menu-impostor.jpg' },
   { k: 'ed',  t: 'EDITOR', d: 'Plantillas · crea cracks · exporta / importa', bg: DIR + 'menu-editor.jpg' },
   { k: 'cfg', t: 'AJUSTES', d: 'Música, IA, cancha y opciones del juego', bg: DIR + 'menu-ajustes.jpg' }
@@ -98,7 +99,7 @@ var CSS = [
 '  border-radius:999px;color:rgba(233,240,255,.8);font:700 11px system-ui;padding:6px 12px;cursor:pointer;backdrop-filter:blur(4px)}',
 '.mh-toggle:hover{border-color:#25f6c9;color:#fff}',
 '@keyframes mhKB{0%{transform:scale(1.03) translate(0,0)}100%{transform:scale(1.13) translate(-1.5%,-1%)}}',
-'body.mh-hi #menu-hub .mh-bg{animation:mhKB 24s ease-in-out infinite alternate;will-change:transform}',
+'body.mh-hi #menu-hub img.mh-bg{animation:mhKB 24s ease-in-out infinite alternate;will-change:transform}',
 '@media (pointer:coarse),(max-width:899px){.mh-toggle{display:none !important}body.hub-on:not(.mh-force) #menu-hub{',
 '  display:none !important}body.hub-on #screen-main-menu{display:flex !important;display:-webkit-flex !important}}'
 ].join('');
@@ -119,9 +120,9 @@ function build() {
   if (hub || typeof document.body === 'undefined' || !document.body) return;
   hub = document.createElement('div');
   hub.id = 'menu-hub';
-  var bgs = '<img class="mh-bg on" data-k="default" src="' + (hiQ() ? DEFAULT_BGA : DEFAULT_BG) + '" alt="" loading="eager" fetchpriority="high" decoding="async">';
+  var bgs = mhBgHTML('default', hiQ() ? DEFAULT_BGA : DEFAULT_BG, hiQ() ? BGA_POSTER : '', true);
   ITEMS.forEach(function (it) {
-    bgs += '<img class="mh-bg" data-k="' + it.k + '" src="' + (hiQ() && it.bga ? it.bga : it.bg) + '" alt="" loading="lazy" decoding="async">';
+    bgs += mhBgHTML(it.k, (hiQ() && it.bga) ? it.bga : it.bg, (hiQ() && it.bgp) ? it.bgp : '', false);
   });
   hub.innerHTML = bgs +
     '<div class="mh-scrim"></div>' +
@@ -165,6 +166,7 @@ function hover(it) {
   for (i = 0; i < imgs.length; i++) imgs[i].classList.toggle('on', imgs[i].getAttribute('data-k') === cur);
   var items = hub.querySelectorAll('.mh-item');
   for (i = 0; i < items.length; i++) items[i].classList.toggle('on', !!it && items[i].getAttribute('data-key') === it.k);
+  syncVideoPlay();
   var H = document.getElementById('mh-h'), S = document.getElementById('mh-sub'), C = document.getElementById('mh-cta');
   if (it) {
     var p = PANEL_BYKEY[it.k] || { h: it.t, s: it.d };
@@ -197,17 +199,59 @@ function ensureToggle() {
   scr.appendChild(b);
 }
 
-function refreshBgs() {
-  /* actualiza los fondos cuando se cambia MEDIO ↔ ALTO sin reconstruir el hub */
+function mhBgHTML(k, src, poster, eager) {
+  /* 🎬 modo ALTO: fondos de VÍDEO animados reales (mp4 en bucle); medio: imágenes */
+  if (/\.mp4($|\?)/.test(src)) {
+    return '<video class="mh-bg' + (k === 'default' ? ' on' : '') + '" data-k="' + k + '" src="' + src + '"'
+      + (poster ? ' poster="' + poster + '"' : '') + ' autoplay muted loop playsinline preload="auto"></video>';
+  }
+  return '<img class="mh-bg' + (k === 'default' ? ' on' : '') + '" data-k="' + k + '" src="' + src + '" alt="" '
+    + (eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"') + ' decoding="async">';
+}
+function syncVideoPlay() {
+  /* solo respira el fondo visible: pausa los vídeos ocultos (batería y calma) */
   if (!hub) return;
   try {
-    var imgs = hub.querySelectorAll('.mh-bg');
-    for (var i = 0; i < imgs.length; i++) {
-      var k = imgs[i].getAttribute('data-k');
-      if (k === 'default') { imgs[i].src = hiQ() ? DEFAULT_BGA : DEFAULT_BG; continue; }
-      var it = ITEMS.filter(function (x) { return x.k === k; })[0];
-      if (it) imgs[i].src = (hiQ() && it.bga) ? it.bga : it.bg;
+    var vs = hub.querySelectorAll('video.mh-bg'), vi;
+    for (vi = 0; vi < vs.length; vi++) {
+      try {
+        if (vs[vi].classList.contains('on')) { var pr = vs[vi].play(); if (pr && pr.catch) pr.catch(function () {}); }
+        else vs[vi].pause();
+      } catch (e1) {}
     }
+  } catch (e2) {}
+}
+
+function refreshBgs() {
+  /* MEDIO ↔ ALTO al vuelo: si el tipo (img ↔ video) cambia, reconstruye el nodo */
+  if (!hub) return;
+  try {
+    var cur = hub.querySelectorAll('.mh-bg'), i;
+    for (i = 0; i < cur.length; i++) {
+      var k = cur[i].getAttribute('data-k'), src, poster = '';
+      if (k === 'default') { src = hiQ() ? DEFAULT_BGA : DEFAULT_BG; poster = hiQ() ? BGA_POSTER : ''; }
+      else {
+        var it = ITEMS.filter(function (x) { return x.k === k; })[0];
+        if (!it) continue;
+        src = (hiQ() && it.bga) ? it.bga : it.bg;
+        poster = (hiQ() && it.bgp) ? it.bgp : '';
+      }
+      var wantVid = /\.mp4($|\?)/.test(src);
+      var isVid = cur[i].tagName === 'VIDEO';
+      if (wantVid === isVid) {
+        if (cur[i].getAttribute('src') !== src) {
+          cur[i].setAttribute('src', src);
+          if (isVid) { try { cur[i].load(); } catch (e0) {} }
+        }
+        if (poster) cur[i].setAttribute('poster', poster);
+      } else {
+        var wasOn = cur[i].classList.contains('on');
+        cur[i].insertAdjacentHTML('beforebegin', mhBgHTML(k, src, poster, k === 'default'));
+        if (wasOn) cur[i].previousElementSibling.classList.add('on');
+        cur[i].remove();
+      }
+    }
+    syncVideoPlay();
   } catch (e) {}
 }
 

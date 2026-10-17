@@ -185,6 +185,9 @@ assert(QM.colorsOf('Alpha FC')[0] === '#112233', 'color del club desde TEAM_COLO
     assert(cycled, 'flechas ‹ › CAMBIAN el equipo ' + errTxt);
     assert(goOk, 'botón JUGAR AHORA lanza la cancha (iframe creado) ' + errTxt);
   }
+  const qmSrc = fs.readFileSync(__dirname + '/quickmatch.js', 'utf8');
+  assert(/bk\.onclick = function \(\) \{ sc\.style\.display = 'none'; close\(\); \}/.test(qmSrc), 'qm-back «← Menú» cierra el overlay #qm-screen completo (antes solo el partido)');
+  assert(fs.readFileSync(__dirname + '/index.html', 'utf8').includes("sc.style.display = 'none'; close();"), 'quickmatch inline de index lleva el arreglo de qm-back');
   console.log('\nRESULTADO QUICKMATCH: ' + ok + ' ok / ' + failN + ' fail');
   process.exit(failN ? 1 : 0);
 })().catch(e => { console.error('FATAL', e); process.exit(1); });

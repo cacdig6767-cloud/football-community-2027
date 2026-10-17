@@ -229,13 +229,18 @@ t(mhSrc.includes('fc27-logo.png?v=3'), 'menu-hub.js usa la imagen del logo en ve
 
 /* 21· ⚡ MODO GRÁFICOS ALTO: assets animados + mapeo por modo + ciclo de Ajustes */
 const MENU_AL = __dirname + '/assets/menu/';
-t(['alto-default.jpg','alto-torneos.jpg','alto-jugador.jpg','alto-rapido.jpg','alto-manager.gif'].every(f => fs.existsSync(MENU_AL + f) && fs.existsSync(MIR_AL(f)) && fs.statSync(MENU_AL + f).size > 4000), '5 fondos ALTO procesados en assets/menu (raíz y espejo)');
+t(['alto-estadio.jpg','alto-torneos.jpg','alto-jugador.jpg','alto-rapido.jpg','alto-manager.gif','carga-lamine.jpg'].every(f => fs.existsSync(MENU_AL + f) && fs.existsSync(MIR_AL(f)) && fs.statSync(MENU_AL + f).size > 4000), '4 posters ALTO calidad IA + GIF Mourinho + promo Lamine de carga (raíz y espejo)');
+t(['alto-estadio.mp4','alto-torneos.mp4','alto-jugador.mp4','alto-rapido.mp4'].every(f => fs.existsSync(MENU_AL + f) && fs.existsSync(MIR_AL(f)) && fs.statSync(MENU_AL + f).size > 80000), '4 vídeos de fondo animados en assets/menu (raíz y espejo, >80KB)');
+t(['alto-estadio.mp4','alto-torneos.mp4','alto-jugador.mp4','alto-rapido.mp4'].every(f => { const b = fs.readFileSync(MENU_AL + f); return b.slice(4, 8).toString() === 'ftyp'; }), 'los 4 mp4 tienen cabecera MP4 válida (ftyp)');
 function MIR_AL(f) { return __dirname + '/football-community-2027/assets/menu/' + f; }
 const gifB = fs.readFileSync(MENU_AL + 'alto-manager.gif');
 t(gifB[0] === 0x47 && gifB[1] === 0x49 && gifB[2] === 0x46, 'alto-manager.gif es un GIF animado real (cabecera GIF)');
 t(!/makeagif/i.test(gifB.toString('latin1')), 'GIF de Mourinho sin marca de agua makeagif');
 const mhAl = fs.readFileSync(__dirname + '/menu-hub.js', 'utf8');
-t(/bga: DIR \+ 'alto-torneos.jpg'/.test(mhAl) && /bga: DIR \+ 'alto-jugador.jpg'/.test(mhAl) && /bga: DIR \+ 'alto-rapido.jpg'/.test(mhAl) && /bga: DIR \+ 'alto-manager.gif'/.test(mhAl) && /DEFAULT_BGA/.test(mhAl), 'mapeo pedido: torneos⭐ · jugador CR7 · rápido Clásico · manager Mourinho GIF · portada promo');
+t(/bga: DIR \+ 'alto-torneos.mp4'/.test(mhAl) && /bga: DIR \+ 'alto-jugador.mp4'/.test(mhAl) && /bga: DIR \+ 'alto-rapido.mp4'/.test(mhAl) && /bga: DIR \+ 'alto-manager.gif'/.test(mhAl) && /DEFAULT_BGA = DIR \+ 'alto-estadio.mp4'/.test(mhAl), 'mapeo VÍDEO pedido: estadio animado por defecto · torneos⭐ · jugador CR7 · rápido Clásico · manager Mourinho GIF');
+t(/bga_poster|BGA_POSTER|bgp: DIR/.test(mhAl) && /alto-estadio\.jpg/.test(mhAl), 'posters IA de respaldo para cada vídeo (alto-*.jpg)');
+t(/function mhBgHTML/.test(mhAl) && /<video class="mh-bg/.test(mhAl) && /function syncVideoPlay/.test(mhAl), 'menu-hub renderiza VIDEO con autoplay/muted/loop/playsinline y pausa los ocultos');
+t(/img\.mh-bg\{animation:mhKB/.test(mhAl), 'Ken Burns solo para fotos quietas (no duplica movimiento en vídeos)');
 t(/hubhi/.test(mhAl) && /mh-hi/.test(mhAl) && /mhKB/.test(mhAl), 'modo "hubhi" con clase mh-hi + Ken Burns (transform GPU)');
 t(fs.readFileSync(__dirname + '/index.html', 'utf8').includes('hubhi'), 'Ajustes cicla hasta PC ALTO (hubhi) en index');
 const idxAl = fs.readFileSync(__dirname + '/index.html', 'utf8');
@@ -249,11 +254,17 @@ t(/hookScreens/.test(mhSrc) && /wrapped\._mh = true/.test(mhSrc), 'menu-hub: hoo
 t(/function G\(\)/.test(mhSrc) && /GG\.showScreen = wrapped/.test(mhSrc) && /var g = G\(\); if \(g\) g\.showScreen/.test(mhSrc), 'menu-hub: GO funciona aunque const Game no cuelgue de window (atajo G())');
 t(idxSrc2.includes('hookScreens') && idxSrc2.includes('body.mh-away #menu-hub{display:none !important}'), 'menu-hub INLINE de index lleva el arreglo (sin clics tragados)');
 t(/st\.id = 'load-promo-css'/.test(idxSrc2) && /classList\.add\('load-promo'\)/.test(idxSrc2), 'pantalla de carga: promo FC27 (load-promo + css inyectado)');
-t(/alto-default\.jpg\\'\) center 20%/.test(idxSrc2), 'la promo de carga usa assets/menu/alto-default.jpg (Lamine)');
+t(/carga-lamine\.jpg\\'\) center 20%/.test(idxSrc2), 'la promo de carga usa assets/menu/carga-lamine.jpg (Lamine)');
 t(/f === 'classic' \|\| \(!f && u === 'classic'\)/.test(idxSrc2), 'la promo se salta en interfaz Clásica (carga oscura intacta)');
 const skFx = fs.readFileSync(__dirname + '/fc27-skin.js', 'utf8');
-t(/var BUILD = 'v6\.10';/.test(skFx) && /ARREGLADOS los botones/.test(skFx) && /NUEVA PANTALLA DE CARGA/.test(skFx), 'skin v6.10 con la novedad del arreglo y la carga nueva');
+t(/var BUILD = 'v6\.12';/.test(skFx) && /GRÁFICOS ALTOS AHORA SON VÍDEO/.test(skFx) && /PANTALLA DE CARGA LIMPIA/.test(skFx) && /NUEVA PANTALLA DE CARGA/.test(skFx) && /«← Menú» de PARTIDO RÁPIDO arreglado/.test(skFx), 'skin con las novedades del arreglo y la carga nueva');
 t(hash2(__dirname + '/carrera-jugador.html') === hash2(__dirname + '/football-community-2027/carrera-jugador.html') && hash2(__dirname + '/ultimate-team.html') === hash2(__dirname + '/football-community-2027/ultimate-team.html') && hash2(__dirname + '/fc27-skin.js') === hash2(__dirname + '/football-community-2027/fc27-skin.js'), 'skinline: carrera + UT + skin raíz ↔ espejo idénticos');
+
+
+/* 23· 🛰️ barrido proactivo navegación: scripts externos vivos + módulos colgados de window */
+t(/<script src="impostor\.js\?v=1"><\/script>/.test(idxSrc2) && /<script src="news-hub\.js"><\/script>/.test(idxSrc2), 'scripts externos (impostor, news-hub) enlazados · quickmatch vive inline');
+t(/window\.TorneosUI = /.test(idxSrc2) && /window\.RosterEditor = /.test(idxSrc2) && /window\.SaveUI = /.test(idxSrc2) && /window\.SoundFX = /.test(idxSrc2), 'TorneosUI/RosterEditor/SaveUI/SoundFX cuelgan de window (botones del hub vivos)');
+t(/src="carrera-jugador\.html"/.test(idxSrc2), 'iframe pc-frame → carrera-jugador.html (Carrera Jugador dentro del hub)');
 
 
 

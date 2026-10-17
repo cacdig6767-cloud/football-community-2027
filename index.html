@@ -1801,9 +1801,11 @@ input[type="range"]{accent-color:#00ff87}
     ls.classList.add('load-promo');
     var st = document.createElement('style');
     st.id = 'load-promo-css';
-    st.textContent = '#loading-screen.load-promo{background:#060d24 url(\'assets/menu/alto-default.jpg\') center 20%/cover no-repeat !important}'
+    st.textContent = '#loading-screen.load-promo{background:#060d24 url(\'assets/menu/carga-lamine.jpg\') center 20%/cover no-repeat !important}'
       + '#loading-screen.load-promo .load-aurora{display:none !important}'
-      + '#loading-screen.load-promo .load-scrim{background:linear-gradient(180deg,rgba(5,9,24,.52) 0%,rgba(4,8,20,.80) 58%,rgba(2,4,12,.93) 100%) !important}';
+      + '#loading-screen.load-promo .load-scrim{background:linear-gradient(180deg,rgba(5,9,24,.40) 0%,rgba(4,8,20,.62) 55%,rgba(2,4,12,.90) 100%) !important}'
++ '#loading-screen.load-promo .load-ball,#loading-screen.load-promo .load-fc-big,#loading-screen.load-promo .load-fc-sub,#loading-screen.load-promo .load-pct,#loading-screen.load-promo .load-tip{display:none !important}'
++ '#loading-screen.load-promo .load-bar{width:min(48vw,430px) !important;height:8px !important;border-radius:99px !important;overflow:hidden;box-shadow:0 0 26px rgba(37,246,201,.35)}';
     (document.head || document.documentElement).appendChild(st);
   } catch (e) {}
 })();
@@ -39501,6 +39503,7 @@ return {
 <script src="press-bank.js"></script>
 <script src="news-hub.js"></script>
 <script id="quickmatch-inline">
+/* · sincronizado con quickmatch.js (🩹 qm-back cierra el hub del modo) · */
 /* ═══════════════════════════════════════════════════════════════════════════
    QUICKMATCH v1.0 · ⚡ PARTIDO RÁPIDO — hub de amistosos y FutSal (FC27)
    ─────────────────────────────────────────────────────────────────────────
@@ -39836,7 +39839,7 @@ function open() {
       '<div id="qm-body" style="max-width:860px;margin:0 auto;padding:12px 10px 60px"></div>';
     document.body.appendChild(sc);
     var bk = document.getElementById('qm-back');
-    if (bk) bk.onclick = function () { close(); };
+    if (bk) bk.onclick = function () { sc.style.display = 'none'; close(); }; /* 🩹 ← Menú también cierra el hub de Partido Rápido (antes close() solo quitaba el partido) */
   }
   sc.style.display = '';
   render();
@@ -39959,7 +39962,7 @@ function crestOf(kind, name) {
   } else {
     try {
       u = (typeof CRESTS !== 'undefined' && CRESTS[name]) || (self.CRESTS && self.CRESTS[name]);
-      if (u) return '<img loading="lazy" class="qm-crestimg" src="' + u + '" alt="">';
+      if (u) return '<img class="qm-crestimg" src="' + u + '" alt="">';
     } catch (e) {}
   }
   var cs = nat ? [nat.c1, nat.c2] : colorsOf(name);
@@ -40300,8 +40303,11 @@ else brand();
 
 /* ── popup de novedades: aparece una vez por versión desplegada ─────────────
    Mantener: al soltar un deploy toca subir BUILD para que reaparezca. */
-var BUILD = 'v6.10';
-var NEWS = [
+var BUILD = 'v6.12';
+var NEWS = [  '🎬 <strong>GRÁFICOS ALTOS AHORA SON VÍDEO DE VERDAD</strong>: estadio nocturno respirando, la estrella UCL palpitando, CR7 celebrando entre confeti y el Clásico con vida propia — bucles de 8 segundos en calidad mejorada con IA, que solo se mueven cuando el fondo está visible (cero chupada de batería). El fondo por defecto del menú ALTO vuelve a ser el <b>estadio de siempre</b>… pero animado.',
+  '🧹 <strong>PANTALLA DE CARGA LIMPIA</strong>: la foto de Lamine Yamal de fondo y solo la <b>barra de carga</b> y el botón <b>▶ ENTRAR AL JUEGO</b>. Sin pelota, sin textos — como la de un juego de verdad.',
+
+  '🚪 <strong>«← Menú» de PARTIDO RÁPIDO arreglado</strong>: en el hub de amistosos/FutSal el botón de salir no hacía nada (solo cerraba partidos ya empezados). Ahora vuelve al menú de verdad — y con los gráficos MEDIO/ALTO el fondo animado te espera como debe ser.',
   '🩹 <strong>ARREGLADOS los botones de ⚙️ Ajustes y «← Volver al menú»</strong> con los gráficos de menú estilo EA (MEDIO/ALTO ⚡): la capa del hub se estaba tragando los clics — ahora se aparta solo cuando entras a una pantalla y regresa al salir.',
   '🖼️ <strong>NUEVA PANTALLA DE CARGA</strong>: la promo oficial de FC27 con Lamine Yamal de fondo tras el «▶ ENTRAR AL JUEGO» en gráficos MEDIO y ALTO (la interfaz Clásica conserva la carga oscura de siempre).',
   '🛠️ <strong>JUGADORES REALES DONDE TOCABA</strong>: en Torneos (¡Champions incluida!) los clubes reales salen con su plantilla auténtica — el Barça con Lamine y Pedri, el Madrid con Mbappé… — y las selecciones con nombres reales completos. Y al <b>CREAR TU CLUB</b> en Carrera Manager heredas la plantilla REAL del equipo sustituido (la vista previa del asistente también).',
@@ -40460,7 +40466,7 @@ return { open: open, close: close, home: renderHome, pick: pick, detail: functio
 })();
 </script>
 <script id="menu-hub-inline">
-/* · sincronizado con menu-hub.js v1.1 (ALTO + 🩹 mh-away + 🩹 G(): const Game no cuelga de window) · */
+/* · sincronizado con menu-hub.js v1.2 (ALTO: vídeos .mp4 vivos + posters IA + mh-away + G()) · */
 /* ═══════════════════════════════════════════════════════════════════════════
    MENU HUB v1.1 · gráficos MEDIO (solo PC) — hub vertical estilo "The World's Game"
    ─────────────────────────────────────────────────────────────────────────
@@ -40477,18 +40483,19 @@ var LS = 'fc27_uimode';
 if (typeof document === 'undefined') return;
 
 var DIR = 'assets/menu/';
-var DEFAULT_BGA = DIR + 'alto-default.jpg';
+var DEFAULT_BGA = DIR + 'alto-estadio.mp4';
+var BGA_POSTER = DIR + 'alto-estadio.jpg';
 function hiQ() { /* modo ALTO ⚡ (fondos animados) se pide desde Ajustes (fc27_uimode='hubhi') */
   try { return localStorage.getItem(LS) === 'hubhi'; } catch (e) { return false; }
 }
 var DEFAULT_BG = DIR + 'menu-default.jpg';
 
 var ITEMS = [
-  { k: 'pj',  t: 'CARRERA JUGADOR', d: 'Vive los momentos como futbolista — al retirarte pasas al banquillo', bg: DIR + 'menu-jugador.jpg', bga: DIR + 'alto-jugador.jpg' },
+  { k: 'pj',  t: 'CARRERA JUGADOR', d: 'Vive los momentos como futbolista — al retirarte pasas al banquillo', bg: DIR + 'menu-jugador.jpg', bga: DIR + 'alto-jugador.mp4', bgp: DIR + 'alto-jugador.jpg' },
   { k: 'mgr', t: 'CARRERA MANAGER', d: 'Continúa tu partida, crea una nueva o importa un archivo', bg: DIR + 'menu-manager.jpg', bga: DIR + 'alto-manager.gif' },
   { k: 'ut',  t: 'ULTIMATE TEAM', d: 'Sobres, colección, gym sin techo y partidos vivos — hasta 🛸 Galáctica', bg: DIR + 'menu-ut.jpg' },
-  { k: 'trn', t: 'TORNEOS', d: 'Champions, Libertadores, Copa Global, Centroamérica… y sandbox total', bg: DIR + 'menu-torneos.jpg', bga: DIR + 'alto-torneos.jpg' },
-  { k: 'qr',  t: 'PARTIDO RÁPIDO', d: 'Amistosos, finales oficiales y FutSal con arenas y paredes', bg: DIR + 'menu-partido.jpg', bga: DIR + 'alto-rapido.jpg' },
+  { k: 'trn', t: 'TORNEOS', d: 'Champions, Libertadores, Copa Global, Centroamérica… y sandbox total', bg: DIR + 'menu-torneos.jpg', bga: DIR + 'alto-torneos.mp4', bgp: DIR + 'alto-torneos.jpg' },
+  { k: 'qr',  t: 'PARTIDO RÁPIDO', d: 'Amistosos, finales oficiales y FutSal con arenas y paredes', bg: DIR + 'menu-partido.jpg', bga: DIR + 'alto-rapido.mp4', bgp: DIR + 'alto-rapido.jpg' },
   { k: 'imp', t: 'MODO IMPOSTOR', d: 'Juego de mesa local: una palabra para todos menos para el impostor', bg: DIR + 'menu-impostor.jpg' },
   { k: 'ed',  t: 'EDITOR', d: 'Plantillas · crea cracks · exporta / importa', bg: DIR + 'menu-editor.jpg' },
   { k: 'cfg', t: 'AJUSTES', d: 'Música, IA, cancha y opciones del juego', bg: DIR + 'menu-ajustes.jpg' }
@@ -40561,7 +40568,7 @@ var CSS = [
 '  border-radius:999px;color:rgba(233,240,255,.8);font:700 11px system-ui;padding:6px 12px;cursor:pointer;backdrop-filter:blur(4px)}',
 '.mh-toggle:hover{border-color:#25f6c9;color:#fff}',
 '@keyframes mhKB{0%{transform:scale(1.03) translate(0,0)}100%{transform:scale(1.13) translate(-1.5%,-1%)}}',
-'body.mh-hi #menu-hub .mh-bg{animation:mhKB 24s ease-in-out infinite alternate;will-change:transform}',
+'body.mh-hi #menu-hub img.mh-bg{animation:mhKB 24s ease-in-out infinite alternate;will-change:transform}',
 '@media (pointer:coarse),(max-width:899px){.mh-toggle{display:none !important}body.hub-on:not(.mh-force) #menu-hub{',
 '  display:none !important}body.hub-on #screen-main-menu{display:flex !important;display:-webkit-flex !important}}'
 ].join('');
@@ -40582,9 +40589,9 @@ function build() {
   if (hub || typeof document.body === 'undefined' || !document.body) return;
   hub = document.createElement('div');
   hub.id = 'menu-hub';
-  var bgs = '<img class="mh-bg on" data-k="default" src="' + (hiQ() ? DEFAULT_BGA : DEFAULT_BG) + '" alt="" loading="eager" fetchpriority="high" decoding="async">';
+  var bgs = mhBgHTML('default', hiQ() ? DEFAULT_BGA : DEFAULT_BG, hiQ() ? BGA_POSTER : '', true);
   ITEMS.forEach(function (it) {
-    bgs += '<img class="mh-bg" data-k="' + it.k + '" src="' + (hiQ() && it.bga ? it.bga : it.bg) + '" alt="" loading="lazy" decoding="async">';
+    bgs += mhBgHTML(it.k, (hiQ() && it.bga) ? it.bga : it.bg, (hiQ() && it.bgp) ? it.bgp : '', false);
   });
   hub.innerHTML = bgs +
     '<div class="mh-scrim"></div>' +
@@ -40628,6 +40635,7 @@ function hover(it) {
   for (i = 0; i < imgs.length; i++) imgs[i].classList.toggle('on', imgs[i].getAttribute('data-k') === cur);
   var items = hub.querySelectorAll('.mh-item');
   for (i = 0; i < items.length; i++) items[i].classList.toggle('on', !!it && items[i].getAttribute('data-key') === it.k);
+  syncVideoPlay();
   var H = document.getElementById('mh-h'), S = document.getElementById('mh-sub'), C = document.getElementById('mh-cta');
   if (it) {
     var p = PANEL_BYKEY[it.k] || { h: it.t, s: it.d };
@@ -40660,17 +40668,59 @@ function ensureToggle() {
   scr.appendChild(b);
 }
 
-function refreshBgs() {
-  /* actualiza los fondos cuando se cambia MEDIO ↔ ALTO sin reconstruir el hub */
+function mhBgHTML(k, src, poster, eager) {
+  /* 🎬 modo ALTO: fondos de VÍDEO animados reales (mp4 en bucle); medio: imágenes */
+  if (/\.mp4($|\?)/.test(src)) {
+    return '<video class="mh-bg' + (k === 'default' ? ' on' : '') + '" data-k="' + k + '" src="' + src + '"'
+      + (poster ? ' poster="' + poster + '"' : '') + ' autoplay muted loop playsinline preload="auto"></video>';
+  }
+  return '<img class="mh-bg' + (k === 'default' ? ' on' : '') + '" data-k="' + k + '" src="' + src + '" alt="" '
+    + (eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"') + ' decoding="async">';
+}
+function syncVideoPlay() {
+  /* solo respira el fondo visible: pausa los vídeos ocultos (batería y calma) */
   if (!hub) return;
   try {
-    var imgs = hub.querySelectorAll('.mh-bg');
-    for (var i = 0; i < imgs.length; i++) {
-      var k = imgs[i].getAttribute('data-k');
-      if (k === 'default') { imgs[i].src = hiQ() ? DEFAULT_BGA : DEFAULT_BG; continue; }
-      var it = ITEMS.filter(function (x) { return x.k === k; })[0];
-      if (it) imgs[i].src = (hiQ() && it.bga) ? it.bga : it.bg;
+    var vs = hub.querySelectorAll('video.mh-bg'), vi;
+    for (vi = 0; vi < vs.length; vi++) {
+      try {
+        if (vs[vi].classList.contains('on')) { var pr = vs[vi].play(); if (pr && pr.catch) pr.catch(function () {}); }
+        else vs[vi].pause();
+      } catch (e1) {}
     }
+  } catch (e2) {}
+}
+
+function refreshBgs() {
+  /* MEDIO ↔ ALTO al vuelo: si el tipo (img ↔ video) cambia, reconstruye el nodo */
+  if (!hub) return;
+  try {
+    var cur = hub.querySelectorAll('.mh-bg'), i;
+    for (i = 0; i < cur.length; i++) {
+      var k = cur[i].getAttribute('data-k'), src, poster = '';
+      if (k === 'default') { src = hiQ() ? DEFAULT_BGA : DEFAULT_BG; poster = hiQ() ? BGA_POSTER : ''; }
+      else {
+        var it = ITEMS.filter(function (x) { return x.k === k; })[0];
+        if (!it) continue;
+        src = (hiQ() && it.bga) ? it.bga : it.bg;
+        poster = (hiQ() && it.bgp) ? it.bgp : '';
+      }
+      var wantVid = /\.mp4($|\?)/.test(src);
+      var isVid = cur[i].tagName === 'VIDEO';
+      if (wantVid === isVid) {
+        if (cur[i].getAttribute('src') !== src) {
+          cur[i].setAttribute('src', src);
+          if (isVid) { try { cur[i].load(); } catch (e0) {} }
+        }
+        if (poster) cur[i].setAttribute('poster', poster);
+      } else {
+        var wasOn = cur[i].classList.contains('on');
+        cur[i].insertAdjacentHTML('beforebegin', mhBgHTML(k, src, poster, k === 'default'));
+        if (wasOn) cur[i].previousElementSibling.classList.add('on');
+        cur[i].remove();
+      }
+    }
+    syncVideoPlay();
   } catch (e) {}
 }
 
